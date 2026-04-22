@@ -17,6 +17,7 @@ services:
         condition: service_started
     environment:
       - PHP_OPCACHE_ENABLE=0
+    restart: unless-stopped
 
   nginx:
     image: nginx:alpine
