@@ -3,6 +3,7 @@ services:
     build:
       context: ./docker/php
       dockerfile: Dockerfile
+      network: host
     container_name: docflow-php
     volumes:
       - ./backend:/var/www/html
@@ -104,6 +105,7 @@ services:
     build:
       context: ./docker/php
       dockerfile: Dockerfile
+      network: host
     container_name: docflow-horizon
     command: php artisan horizon
     volumes:
