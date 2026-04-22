@@ -1,4 +1,4 @@
-FROM php:8.3-fpm-bookworm
+FROM php:8.4-fpm-bookworm
 
 RUN apt-get update --fix-missing && \
     apt-get install -y --fix-missing --no-install-recommends \
