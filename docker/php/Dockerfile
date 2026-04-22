@@ -1,6 +1,7 @@
-FROM php:8.3-fpm
+FROM php:8.3-fpm-bookworm
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update --fix-missing && \
+    apt-get install -y --fix-missing --no-install-recommends \
     git \
     curl \
     libpng-dev \
