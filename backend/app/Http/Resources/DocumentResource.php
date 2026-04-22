@@ -16,7 +16,8 @@ class DocumentResource extends JsonResource
             'original_filename' => $this->original_filename,
             'created_at'        => $this->created_at->toIso8601String(),
             'expires_at'        => $this->expires_at?->toIso8601String(),
-            'signers_count'     => $this->whenCounted('signers'),
+            'signers_count'        => $this->whenCounted('signers'),
+            'signers_signed_count' => $this->when(isset($this->resource->signers_signed_count), $this->resource->signers_signed_count ?? 0),
             'user'              => $this->whenLoaded('user', fn () => [
                 'id'   => $this->user->id,
                 'name' => $this->user->name,

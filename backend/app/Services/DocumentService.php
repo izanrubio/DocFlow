@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\DocumentEventType;
 use App\Enums\DocumentStatus;
+use App\Enums\SignerStatus;
 use App\Models\Document;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -16,8 +17,11 @@ class DocumentService
     public function list(User $user, array $filters): LengthAwarePaginator
     {
         $query = Document::forTenant($user->tenant_id)
-            ->withCount('signers')
-            ->with('user:id,name')
+            ->withCount([
+                'signers',
+                'signers as signers_signed_count' => fn ($q) => $q->where('status', SignerStatus::Signed->value),
+            ])
+            ->with(['user:id,name', 'signers:id,document_id,name,email,order,status'])
             ->orderByDesc('created_at');
 
         if (!empty($filters['status'])) {

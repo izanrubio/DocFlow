@@ -132,8 +132,13 @@ export default function Dashboard() {
                                             {STATUS_LABEL[doc.status] ?? doc.status}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-gray-600">
-                                        {doc.signers_count ?? 0}
+                                    <td
+                                        className="px-4 py-3 text-gray-600"
+                                        title={doc.signers?.length
+                                            ? doc.signers.map((s) => `${s.name}: ${s.status}`).join('\n')
+                                            : 'Sin firmantes'}
+                                    >
+                                        {doc.signers_signed_count ?? 0}/{doc.signers_count ?? 0} firmaron
                                     </td>
                                     <td className="px-4 py-3 text-gray-500">
                                         {new Date(doc.created_at).toLocaleDateString('es-ES')}
