@@ -1,6 +1,8 @@
 FROM php:8.4-fpm-bookworm
 
-RUN sed -i 's/ bookworm-updates//' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
+RUN sed -i 's|deb.debian.org|ftp.es.debian.org|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's|deb.debian.org|ftp.es.debian.org|g' /etc/apt/sources.list 2>/dev/null || true && \
+    sed -i 's|security.debian.org|ftp.es.debian.org/debian-security|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
