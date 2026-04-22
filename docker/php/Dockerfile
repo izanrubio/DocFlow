@@ -16,6 +16,7 @@ RUN apk add --no-cache \
     && docker-php-ext-enable redis \
     && apk del $PHPIZE_DEPS linux-headers
 
+COPY fpm-pool.conf /usr/local/etc/php-fpm.d/zz-docker.conf
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
