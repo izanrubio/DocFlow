@@ -73,6 +73,19 @@ return [
             'report' => false,
         ],
 
+        'documents_public' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'bucket' => env('MINIO_BUCKET', 'docflow-documents'),
+            'endpoint' => env('MINIO_PUBLIC_ENDPOINT', 'http://localhost:9000'),
+            'use_path_style_endpoint' => true,
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*
