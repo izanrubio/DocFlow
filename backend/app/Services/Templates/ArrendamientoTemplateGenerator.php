@@ -51,8 +51,32 @@ class ArrendamientoTemplateGenerator extends AbstractTemplateGenerator
 
         $this->body($html);
         $this->disclaimer();
-        $this->signatures('Arrendador', 'Arrendatario');
+        $this->signaturesPage('Arrendador', 'Arrendatario');
 
         return $this->output();
+    }
+
+    public function getSignaturePositions(): array
+    {
+        return [
+            [
+                'signer_order' => 1,
+                'page'         => $this->signaturePage,
+                'x'            => 25,
+                'y'            => 40,
+                'width'        => 75,
+                'height'       => 30,
+                'label'        => 'Arrendador',
+            ],
+            [
+                'signer_order' => 2,
+                'page'         => $this->signaturePage,
+                'x'            => 110,
+                'y'            => 40,
+                'width'        => 75,
+                'height'       => 30,
+                'label'        => 'Arrendatario',
+            ],
+        ];
     }
 }

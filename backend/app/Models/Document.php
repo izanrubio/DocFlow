@@ -11,13 +11,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Document extends Model
 {
     protected $fillable = [
-        'tenant_id', 'user_id', 'title', 'file_path',
-        'original_filename', 'status', 'expires_at',
+        'tenant_id', 'user_id', 'title', 'file_path', 'signed_file_path',
+        'original_filename', 'status', 'expires_at', 'signature_positions',
     ];
 
     protected $casts = [
-        'status' => DocumentStatus::class,
-        'expires_at' => 'datetime',
+        'status'              => DocumentStatus::class,
+        'expires_at'          => 'datetime',
+        'signature_positions' => 'array',
     ];
 
     public function tenant(): BelongsTo

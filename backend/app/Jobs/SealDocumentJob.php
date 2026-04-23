@@ -36,15 +36,35 @@ class SealDocumentJob implements ShouldQueue, NotTenantAware
 
             $pageCount = $pdf->setSourceFile($tmpOriginal);
 
+            // Index signature positions by page number for O(1) lookup
+            $positionsByPage = [];
+            foreach ($document->signature_positions ?? [] as $pos) {
+                $positionsByPage[(int) $pos['page']][] = $pos;
+            }
+
             for ($i = 1; $i <= $pageCount; $i++) {
-                $tpl = $pdf->importPage($i);
+                $tpl  = $pdf->importPage($i);
                 $size = $pdf->getTemplateSize($tpl);
                 $orientation = $size['width'] > $size['height'] ? 'L' : 'P';
                 $pdf->AddPage($orientation, [$size['width'], $size['height']]);
                 $pdf->useTemplate($tpl, 0, 0, $size['width'], $size['height']);
+
+                // Embed signatures on top of this page if positions are defined for it
+                if (isset($positionsByPage[$i])) {
+                    foreach ($positionsByPage[$i] as $pos) {
+                        $signer = $document->signers->firstWhere('order', $pos['signer_order']);
+                        if ($signer && $signer->signature) {
+                            $this->embedSignatureAtPosition($pdf, $signer, $pos);
+                        }
+                    }
+                }
             }
 
-            $this->addSignaturesPage($pdf, $document);
+            // Legacy behavior: add a separate signatures page when no positions defined
+            if (empty($document->signature_positions)) {
+                $this->addSignaturesPage($pdf, $document);
+            }
+
             $this->addAuditPage($pdf, $document);
 
             $pdf->Output($tmpSigned, 'F');
@@ -58,6 +78,47 @@ class SealDocumentJob implements ShouldQueue, NotTenantAware
         } finally {
             @unlink($tmpOriginal);
             @unlink($tmpSigned);
+        }
+    }
+
+    private function embedSignatureAtPosition(Fpdi $pdf, $signer, array $pos): void
+    {
+        $sigData = $signer->signature->signature_data;
+        if (str_starts_with($sigData, 'data:image/png;base64,')) {
+            $sigData = substr($sigData, strlen('data:image/png;base64,'));
+        }
+
+        $tmpSig = tempnam(sys_get_temp_dir(), 'docflow_sig_') . '.png';
+        file_put_contents($tmpSig, base64_decode($sigData));
+
+        try {
+            // White background to cleanly overwrite the placeholder box
+            $pdf->SetFillColor(255, 255, 255);
+            $pdf->Rect($pos['x'], $pos['y'], $pos['width'], $pos['height'], 'F');
+
+            $pdf->Image($tmpSig, $pos['x'], $pos['y'], $pos['width'], $pos['height'], 'PNG');
+        } catch (Throwable) {
+            // skip corrupt image
+        } finally {
+            @unlink($tmpSig);
+        }
+
+        // Name, email and date immediately below the image box
+        $textY = $pos['y'] + $pos['height'] + 2;
+
+        $pdf->SetFont('helvetica', 'B', 7);
+        $pdf->SetTextColor(30, 30, 30);
+        $pdf->SetXY($pos['x'], $textY);
+        $pdf->Cell($pos['width'], 4, $signer->name, 0, 1, 'L');
+
+        $pdf->SetFont('helvetica', '', 6);
+        $pdf->SetTextColor(80, 80, 80);
+        $pdf->SetXY($pos['x'], $textY + 4);
+        $pdf->Cell($pos['width'], 3.5, $signer->email, 0, 1, 'L');
+
+        if ($signer->signed_at) {
+            $pdf->SetXY($pos['x'], $textY + 7.5);
+            $pdf->Cell($pos['width'], 3.5, 'Firmado: ' . $signer->signed_at->format('d/m/Y H:i:s') . ' UTC', 0, 1, 'L');
         }
     }
 

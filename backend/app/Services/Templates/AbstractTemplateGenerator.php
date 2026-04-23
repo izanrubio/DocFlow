@@ -8,6 +8,7 @@ use TCPDF;
 abstract class AbstractTemplateGenerator implements TemplateGeneratorInterface
 {
     protected TCPDF $pdf;
+    protected int $signaturePage = 1;
 
     protected function initPdf(string $title): void
     {
@@ -62,33 +63,49 @@ abstract class AbstractTemplateGenerator implements TemplateGeneratorInterface
         );
     }
 
-    protected function signatures(string $labelA, string $labelB): void
+    // Always creates a new dedicated page for signatures so positions are deterministic.
+    // Call after body() + disclaimer(). Records $this->signaturePage for getSignaturePositions().
+    protected function signaturesPage(string $labelA, string $labelB): void
     {
-        $this->pdf->Ln(10);
-        $y = $this->pdf->GetY() + 15;
-        if ($y > 240) {
-            $this->pdf->AddPage();
-            $y = 30;
-        }
-        $this->pdf->SetY($y);
-        $this->pdf->SetFont('helvetica', '', 10);
+        $this->pdf->AddPage('P', [210, 297]);
+        $this->signaturePage = $this->pdf->getPage();
+
+        $this->pdf->SetFont('helvetica', 'B', 13);
         $this->pdf->SetTextColor(30, 30, 30);
-        $this->pdf->Cell(75, 6, "Firma de {$labelA}:", 0, 0);
-        $this->pdf->Cell(10, 6, '', 0, 0);
-        $this->pdf->Cell(75, 6, "Firma de {$labelB}:", 0, 1);
-        $this->pdf->Ln(15);
-        $this->pdf->Cell(75, 0.5, '', 'T', 0);
-        $this->pdf->Cell(10, 0.5, '', 0, 0);
-        $this->pdf->Cell(75, 0.5, '', 'T', 1);
-        $this->pdf->Ln(3);
-        $this->pdf->SetFont('helvetica', '', 9);
-        $this->pdf->SetTextColor(100, 100, 100);
-        $this->pdf->Cell(75, 5, 'Nombre: _______________________', 0, 0);
-        $this->pdf->Cell(10, 5, '', 0, 0);
-        $this->pdf->Cell(75, 5, 'Nombre: _______________________', 0, 1);
-        $this->pdf->Cell(75, 5, 'Fecha: ________________________', 0, 0);
-        $this->pdf->Cell(10, 5, '', 0, 0);
-        $this->pdf->Cell(75, 5, 'Fecha: ________________________', 0, 1);
+        $this->pdf->SetXY(0, 15);
+        $this->pdf->Cell(210, 8, 'Zona de firmas', 0, 1, 'C');
+
+        $this->pdf->SetFont('helvetica', 'I', 8);
+        $this->pdf->SetTextColor(140, 140, 140);
+        $this->pdf->SetXY(0, 24);
+        $this->pdf->Cell(210, 5, 'Las firmas digitales serán incrustadas en las áreas indicadas', 0, 1, 'C');
+
+        // Labels
+        $this->pdf->SetFont('helvetica', 'B', 9);
+        $this->pdf->SetTextColor(60, 60, 60);
+        $this->pdf->SetXY(25, 34);
+        $this->pdf->Cell(75, 5, $labelA, 0, 0, 'L');
+        $this->pdf->SetXY(110, 34);
+        $this->pdf->Cell(75, 5, $labelB, 0, 1, 'L');
+
+        // Signature placeholder boxes (SealDocumentJob overlays images here)
+        $this->pdf->SetDrawColor(180, 180, 180);
+        $this->pdf->SetFillColor(248, 249, 250);
+        $this->pdf->RoundedRect(25, 40, 75, 30, 2, '1111', 'DF');
+        $this->pdf->RoundedRect(110, 40, 75, 30, 2, '1111', 'DF');
+
+        // Hint text inside boxes
+        $this->pdf->SetFont('helvetica', 'I', 8);
+        $this->pdf->SetTextColor(195, 195, 195);
+        $this->pdf->SetXY(25, 53);
+        $this->pdf->Cell(75, 5, '[ Firma digital ]', 0, 0, 'C');
+        $this->pdf->SetXY(110, 53);
+        $this->pdf->Cell(75, 5, '[ Firma digital ]', 0, 1, 'C');
+    }
+
+    public function getSignaturePositions(): array
+    {
+        return [];
     }
 
     protected function formatDate(string $value): string

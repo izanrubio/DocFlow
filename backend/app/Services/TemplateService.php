@@ -93,6 +93,8 @@ class TemplateService
             Str::uuid()
         );
 
+        $signaturePositions = null;
+
         if (!empty($template->variables)) {
             $values = $data['values'] ?? [];
 
@@ -110,6 +112,8 @@ class TemplateService
             $generator = TemplateGeneratorFactory::make($template);
             if ($generator) {
                 Storage::disk('documents')->put($newPath, $generator->generate($values));
+                $positions = $generator->getSignaturePositions();
+                $signaturePositions = !empty($positions) ? $positions : null;
             } else {
                 Storage::disk('documents')->copy($template->file_path, $newPath);
             }
@@ -118,13 +122,14 @@ class TemplateService
         }
 
         $document = Document::create([
-            'tenant_id'         => $user->tenant_id,
-            'user_id'           => $user->id,
-            'title'             => $data['title'],
-            'file_path'         => $newPath,
-            'original_filename' => $template->name . '.pdf',
-            'status'            => DocumentStatus::Draft,
-            'expires_at'        => $data['expires_at'] ?? null,
+            'tenant_id'           => $user->tenant_id,
+            'user_id'             => $user->id,
+            'title'               => $data['title'],
+            'file_path'           => $newPath,
+            'original_filename'   => $template->name . '.pdf',
+            'status'              => DocumentStatus::Draft,
+            'expires_at'          => $data['expires_at'] ?? null,
+            'signature_positions' => $signaturePositions,
         ]);
 
         $document->events()->create([
