@@ -118,6 +118,26 @@ services:
       - mysql
     restart: unless-stopped
 
+  scheduler:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+      network: host
+    container_name: docflow-scheduler
+    command: sh -c "while true; do php artisan schedule:run --no-interaction; sleep 60; done"
+    volumes:
+      - ./backend:/var/www/html
+    networks:
+      - docflow
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+
 volumes:
   mysql_data:
   redis_data:

@@ -9,11 +9,12 @@ export default function UploadDocumentModal({ onClose }) {
     const queryClient = useQueryClient();
     const fileInputRef = useRef(null);
 
-    const [title, setTitle]       = useState('');
-    const [file, setFile]         = useState(null);
-    const [progress, setProgress] = useState(0);
-    const [dragOver, setDragOver] = useState(false);
-    const [errors, setErrors]     = useState({});
+    const [title, setTitle]         = useState('');
+    const [file, setFile]           = useState(null);
+    const [expiresAt, setExpiresAt] = useState('');
+    const [progress, setProgress]   = useState(0);
+    const [dragOver, setDragOver]   = useState(false);
+    const [errors, setErrors]       = useState({});
 
     const mutation = useMutation({
         mutationFn: (formData) =>
@@ -57,6 +58,7 @@ export default function UploadDocumentModal({ onClose }) {
         const fd = new FormData();
         fd.append('title', title);
         fd.append('file', file);
+        if (expiresAt) fd.append('expires_at', expiresAt);
         setProgress(0);
         mutation.mutate(fd);
     };
@@ -135,6 +137,25 @@ export default function UploadDocumentModal({ onClose }) {
                         />
                         {errors.file && (
                             <p className="mt-1 text-xs text-red-600">{errors.file[0]}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Fecha límite de firma <span className="text-gray-400 font-normal">(opcional)</span>
+                        </label>
+                        <input
+                            type="date"
+                            value={expiresAt}
+                            min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                            onChange={(e) => setExpiresAt(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                        />
+                        <p className="mt-1 text-xs text-gray-400">
+                            Si se establece, el documento caducará automáticamente en esa fecha.
+                        </p>
+                        {errors.expires_at && (
+                            <p className="mt-1 text-xs text-red-600">{errors.expires_at[0]}</p>
                         )}
                     </div>
 

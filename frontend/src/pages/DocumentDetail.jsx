@@ -5,8 +5,12 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import {
     ArrowLeftIcon,
     ArrowDownTrayIcon,
+    BellIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
+    DocumentIcon,
+    EnvelopeIcon,
+    ExclamationTriangleIcon,
     TrashIcon,
     UserPlusIcon,
     CheckCircleIcon,
@@ -16,6 +20,7 @@ import {
     XMarkIcon,
     PaperAirplaneIcon,
 } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Layout from '../components/Layout';
 import { getDocument, deleteDocument, addSigner, removeSigner, sendDocument, downloadDocument } from '../api/documents';
 
@@ -56,9 +61,24 @@ const SIGNER_ICON = {
     rejected: <XCircleIcon className="w-4 h-4 text-red-500" />,
 };
 const EVENT_LABEL = {
-    created: 'Documento creado', sent: 'Enviado a firmantes', viewed: 'Visualizado',
-    signed: 'Firmado', rejected: 'Rechazado', completed: 'Completado',
-    expired: 'Expirado', reminder_sent: 'Recordatorio enviado',
+    created:       'Documento creado',
+    sent:          'Enviado a firmantes',
+    viewed:        'Visualizado',
+    signed:        'Firmado',
+    rejected:      'Rechazado',
+    completed:     'Completado',
+    expired:       'Caducado',
+    reminder_sent: 'Recordatorio enviado',
+};
+const EVENT_ICON = {
+    created:       <DocumentIcon className="w-3.5 h-3.5 text-gray-400" />,
+    sent:          <EnvelopeIcon className="w-3.5 h-3.5 text-blue-400" />,
+    viewed:        <EyeIcon className="w-3.5 h-3.5 text-blue-400" />,
+    signed:        <CheckCircleIcon className="w-3.5 h-3.5 text-green-500" />,
+    rejected:      <XCircleIcon className="w-3.5 h-3.5 text-red-500" />,
+    completed:     <CheckCircleSolid className="w-3.5 h-3.5 text-green-600" />,
+    expired:       <ClockIcon className="w-3.5 h-3.5 text-red-500" />,
+    reminder_sent: <BellIcon className="w-3.5 h-3.5 text-yellow-500" />,
 };
 
 const EMPTY_SIGNER = { name: '', email: '', order: 1 };
@@ -197,7 +217,16 @@ export default function DocumentDetail() {
     const doc = data;
     const isDraft     = doc.status === 'draft';
     const isCompleted = doc.status === 'completed';
+    const isExpired   = doc.status === 'expired';
     const hasSigner   = doc.signers && doc.signers.length > 0;
+
+    const expiryColor = () => {
+        if (!doc.expires_at || isExpired) return null;
+        const daysLeft = (new Date(doc.expires_at) - Date.now()) / 86400000;
+        if (daysLeft < 2)  return 'text-red-600 font-semibold';
+        if (daysLeft < 7)  return 'text-yellow-600';
+        return 'text-green-700';
+    };
 
     return (
         <Layout>
@@ -232,6 +261,21 @@ export default function DocumentDetail() {
                             Descargar PDF firmado
                         </button>
                     )}
+                </div>
+            )}
+
+            {isExpired && (
+                <div className="mb-6 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4">
+                    <ExclamationTriangleIcon className="w-6 h-6 text-red-500 shrink-0" />
+                    <div>
+                        <p className="text-sm font-semibold text-red-800">Este documento ha caducado y ya no puede ser firmado</p>
+                        <p className="text-xs text-red-600">
+                            {doc.expires_at
+                                ? `Caducó el ${new Date(doc.expires_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}.`
+                                : 'El plazo de firma ha finalizado.'}
+                            {' '}Crea un nuevo documento si necesitas continuar.
+                        </p>
+                    </div>
                 </div>
             )}
 
@@ -280,9 +324,11 @@ export default function DocumentDetail() {
                                 <span className="text-gray-800">{new Date(doc.created_at).toLocaleDateString('es-ES')}</span>
                             </div>
                             {doc.expires_at && (
-                                <div className="flex justify-between">
-                                    <span className="text-gray-500">Expira</span>
-                                    <span className="text-gray-800">{new Date(doc.expires_at).toLocaleDateString('es-ES')}</span>
+                                <div className="flex justify-between items-start">
+                                    <span className="text-gray-500">{isExpired ? 'Caducó' : 'Caduca'}</span>
+                                    <span className={expiryColor() ?? 'text-gray-800'}>
+                                        {new Date(doc.expires_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </span>
                                 </div>
                             )}
                             {doc.user && (
@@ -436,7 +482,9 @@ export default function DocumentDetail() {
                             <ul className="space-y-2">
                                 {doc.events.map((ev) => (
                                     <li key={ev.id} className="flex items-start gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                                        <span className="mt-0.5 shrink-0">
+                                            {EVENT_ICON[ev.type] ?? <div className="w-3.5 h-3.5 rounded-full bg-indigo-200 mt-0.5" />}
+                                        </span>
                                         <div>
                                             <p className="text-sm text-gray-700">{EVENT_LABEL[ev.type] ?? ev.type}</p>
                                             <p className="text-xs text-gray-400">{new Date(ev.created_at).toLocaleString('es-ES')}</p>

@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\SignerController;
 use App\Http\Controllers\SigningController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -31,3 +32,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('sign/{token}', [SigningController::class, 'show']);
 Route::post('sign/{token}', [SigningController::class, 'sign']);
+
+if (app()->environment('local')) {
+    Route::get('dev/trigger-reminders', function () {
+        Artisan::call('documents:send-reminders');
+        return response()->json(['data' => ['output' => Artisan::output()], 'message' => 'OK', 'status' => 200]);
+    });
+    Route::get('dev/trigger-expiration', function () {
+        Artisan::call('documents:expire');
+        return response()->json(['data' => ['output' => Artisan::output()], 'message' => 'OK', 'status' => 200]);
+    });
+}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { PlusIcon, DocumentTextIcon, ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, DocumentTextIcon, ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import Layout from '../components/Layout';
 import UploadDocumentModal from '../components/UploadDocumentModal';
 import { getDocuments } from '../api/documents';
@@ -33,6 +33,36 @@ const STATUS_LABEL = {
     expired:     'Expirado',
     cancelled:   'Cancelado',
 };
+
+function ExpiryBadge({ doc }) {
+    if (!doc.expires_at || !['sent', 'in_progress'].includes(doc.status)) return null;
+
+    const msLeft  = new Date(doc.expires_at) - Date.now();
+    const daysLeft = msLeft / 86400000;
+
+    if (daysLeft < 0) return null;
+
+    if (daysLeft < 2) {
+        return (
+            <span className="inline-flex items-center gap-1 text-xs text-red-600 font-semibold">
+                <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                ¡Caduca pronto!
+            </span>
+        );
+    }
+    if (daysLeft < 7) {
+        return (
+            <span className="text-xs text-yellow-600 font-medium">
+                Caduca en {Math.ceil(daysLeft)}d
+            </span>
+        );
+    }
+    return (
+        <span className="text-xs text-green-600">
+            Caduca en {Math.ceil(daysLeft)}d
+        </span>
+    );
+}
 
 function SkeletonRow() {
     return (
@@ -143,7 +173,8 @@ export default function Dashboard() {
                                         {doc.signers_signed_count ?? 0}/{doc.signers_count ?? 0} firmaron
                                     </td>
                                     <td className="px-4 py-3 text-gray-500">
-                                        {new Date(doc.created_at).toLocaleDateString('es-ES')}
+                                        <div>{new Date(doc.created_at).toLocaleDateString('es-ES')}</div>
+                                        <ExpiryBadge doc={doc} />
                                     </td>
                                     <td className="px-4 py-3">
                                         <button

@@ -14,8 +14,9 @@ class StoreDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'file'  => ['required', 'file', 'mimes:pdf', 'max:20480'],
+            'title'      => ['required', 'string', 'max:255'],
+            'file'       => ['required', 'file', 'mimes:pdf', 'max:20480'],
+            'expires_at' => ['nullable', 'date', 'after:today'],
         ];
     }
 }

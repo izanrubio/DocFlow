@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Document, Page, pdfjs } from 'react-pdf';
 import SignatureCanvas from 'react-signature-canvas';
 import {
+    CalendarDaysIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
     CheckCircleIcon,
@@ -111,7 +112,29 @@ export default function SignDocument() {
     }
 
     if (isError) {
-        const msg = error?.response?.data?.message ?? 'Enlace no válido o expirado.';
+        const msg     = error?.response?.data?.message ?? '';
+        const expired = msg.toLowerCase().includes('expir') || msg.toLowerCase().includes('caduc');
+
+        if (expired) {
+            return (
+                <div className="min-h-screen flex flex-col bg-gray-50">
+                    <Header />
+                    <div className="flex-1 flex items-center justify-center">
+                        <div className="text-center max-w-sm px-4">
+                            <CalendarDaysIcon className="w-16 h-16 text-red-400 mx-auto mb-4" />
+                            <h2 className="text-xl font-bold text-gray-900 mb-2">Este documento ha caducado</h2>
+                            <p className="text-gray-500">
+                                El plazo para firmar este documento ha finalizado.
+                                {data?.document?.sent_by && (
+                                    <> Contacta con <strong>{data.document.sent_by}</strong> si necesitas un nuevo documento.</>
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className="min-h-screen flex flex-col bg-gray-50">
                 <Header />
@@ -119,7 +142,7 @@ export default function SignDocument() {
                     <div className="text-center max-w-sm px-4">
                         <XCircleIcon className="w-16 h-16 text-red-400 mx-auto mb-4" />
                         <h2 className="text-xl font-bold text-gray-900 mb-2">No se puede firmar</h2>
-                        <p className="text-gray-500">{msg}</p>
+                        <p className="text-gray-500">{msg || 'Enlace no válido o expirado.'}</p>
                     </div>
                 </div>
             </div>

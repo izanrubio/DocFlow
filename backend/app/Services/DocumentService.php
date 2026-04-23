@@ -50,6 +50,7 @@ class DocumentService
             'file_path'         => $path,
             'original_filename' => $file->getClientOriginalName(),
             'status'            => DocumentStatus::Draft,
+            'expires_at'        => $data['expires_at'] ?? null,
         ]);
 
         $document->events()->create([
