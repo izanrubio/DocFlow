@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Document, Page, pdfjs } from 'react-pdf';
 import SignatureCanvas from 'react-signature-canvas';
 import {
@@ -11,7 +11,7 @@ import {
     EyeIcon,
     XCircleIcon,
 } from '@heroicons/react/24/outline';
-import { getSignRequest } from '../api/sign';
+import { getSignRequest, signDocument } from '../api/sign';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -48,11 +48,17 @@ function Header() {
 export default function SignDocument() {
     const { token } = useParams();
 
-    const [numPages, setNumPages]     = useState(null);
-    const [pageNumber, setPageNumber] = useState(1);
-    const [accepted, setAccepted]     = useState(false);
-    const [isSigned, setIsSigned]     = useState(false);
+    const [numPages, setNumPages]         = useState(null);
+    const [pageNumber, setPageNumber]     = useState(1);
+    const [accepted, setAccepted]         = useState(false);
+    const [isSigned, setIsSigned]         = useState(false);
+    const [signResult, setSignResult]     = useState(null);
     const sigPad = useRef(null);
+
+    const signMutation = useMutation({
+        mutationFn: (signatureData) => signDocument(token, signatureData).then((r) => r.data.data),
+        onSuccess: (result) => setSignResult(result),
+    });
 
     const { data, isLoading, isError, error } = useQuery({
         queryKey: ['sign', token],
@@ -69,6 +75,29 @@ export default function SignDocument() {
         sigPad.current?.clear();
         setIsSigned(false);
     };
+
+    if (signResult) {
+        return (
+            <div className="min-h-screen flex flex-col bg-gray-50">
+                <Header />
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center max-w-sm px-4">
+                        <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto mb-6" />
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3">¡Documento firmado!</h2>
+                        {signResult.all_signed ? (
+                            <p className="text-gray-500">
+                                Todos los firmantes han completado el proceso. Recibirás el PDF sellado por email en breve.
+                            </p>
+                        ) : (
+                            <p className="text-gray-500">
+                                Tu firma ha sido registrada. Se ha notificado al siguiente firmante.
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading) {
         return (
@@ -231,17 +260,21 @@ export default function SignDocument() {
                             </span>
                         </label>
 
+                        {signMutation.isError && (
+                            <p className="text-sm text-red-600 text-center -mt-2">
+                                {signMutation.error?.response?.data?.message ?? 'Error al firmar. Inténtalo de nuevo.'}
+                            </p>
+                        )}
+
                         <button
-                            disabled={!accepted || !isSigned}
+                            disabled={!accepted || !isSigned || signMutation.isPending}
                             onClick={() => {
-                                // TODO Sprint 4: submit signature
-                                // const signatureData = sigPad.current.toDataURL('image/png');
-                                // submitSignature(token, { signature: signatureData });
-                                alert('Sprint 4: aquí se enviará la firma al servidor.');
+                                const signatureData = sigPad.current.toDataURL('image/png');
+                                signMutation.mutate(signatureData);
                             }}
                             className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
                         >
-                            Firmar documento
+                            {signMutation.isPending ? 'Firmando…' : 'Firmar documento'}
                         </button>
 
                         <p className="text-xs text-center text-gray-400">

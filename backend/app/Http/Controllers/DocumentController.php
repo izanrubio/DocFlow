@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DocumentStatus;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Resources\DocumentResource;
 use App\Services\DocumentService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
@@ -48,5 +50,18 @@ class DocumentController extends Controller
         $this->service->delete($request->user(), $id);
 
         return $this->success(null, 'Document deleted successfully');
+    }
+
+    public function download(Request $request, int $id): JsonResponse
+    {
+        $document = $this->service->show($request->user(), $id);
+
+        abort_if($document->status !== DocumentStatus::Completed, 422, 'Document is not completed yet.');
+        abort_if(!$document->signed_file_path, 404, 'Signed file not found.');
+
+        $url = Storage::disk('documents_public')
+            ->temporaryUrl($document->signed_file_path, now()->addHours(24));
+
+        return $this->success(['download_url' => $url]);
     }
 }

@@ -25,6 +25,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('documents/{document}/signers', [SignerController::class, 'store']);
     Route::delete('documents/{document}/signers/{signer}', [SignerController::class, 'destroy']);
     Route::post('documents/{document}/send', [SignerController::class, 'send']);
+
+    Route::get('documents/{id}/download', [DocumentController::class, 'download']);
 });
 
 Route::get('sign/{token}', [SigningController::class, 'show']);
+Route::post('sign/{token}', [SigningController::class, 'sign']);

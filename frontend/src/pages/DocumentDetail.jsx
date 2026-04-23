@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Document, Page, pdfjs } from 'react-pdf';
 import {
     ArrowLeftIcon,
+    ArrowDownTrayIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
     TrashIcon,
@@ -16,7 +17,7 @@ import {
     PaperAirplaneIcon,
 } from '@heroicons/react/24/outline';
 import Layout from '../components/Layout';
-import { getDocument, deleteDocument, addSigner, removeSigner, sendDocument } from '../api/documents';
+import { getDocument, deleteDocument, addSigner, removeSigner, sendDocument, downloadDocument } from '../api/documents';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -76,6 +77,10 @@ export default function DocumentDetail() {
     const { data, isLoading, isError } = useQuery({
         queryKey: ['document', id],
         queryFn:  () => getDocument(id).then((r) => r.data.data),
+        refetchInterval: (query) => {
+            const status = query.state.data?.status;
+            return status === 'sent' || status === 'in_progress' ? 10000 : false;
+        },
     });
 
     const invalidate = () => queryClient.invalidateQueries({ queryKey: ['document', id] });
@@ -158,8 +163,9 @@ export default function DocumentDetail() {
     }
 
     const doc = data;
-    const isDraft = doc.status === 'draft';
-    const hasSigner = doc.signers && doc.signers.length > 0;
+    const isDraft     = doc.status === 'draft';
+    const isCompleted = doc.status === 'completed';
+    const hasSigner   = doc.signers && doc.signers.length > 0;
 
     return (
         <Layout>
@@ -172,6 +178,30 @@ export default function DocumentDetail() {
                     {STATUS_LABEL[doc.status] ?? doc.status}
                 </span>
             </div>
+
+            {isCompleted && (
+                <div className="mb-6 flex items-center justify-between gap-4 bg-green-50 border border-green-200 rounded-xl px-5 py-4">
+                    <div className="flex items-center gap-3">
+                        <CheckCircleIcon className="w-6 h-6 text-green-500 shrink-0" />
+                        <div>
+                            <p className="text-sm font-semibold text-green-800">Documento firmado por todos los firmantes</p>
+                            <p className="text-xs text-green-600">El PDF sellado está disponible para su descarga.</p>
+                        </div>
+                    </div>
+                    {doc.has_signed_file && (
+                        <button
+                            onClick={async () => {
+                                const res = await downloadDocument(id);
+                                window.open(res.data.data.download_url, '_blank');
+                            }}
+                            className="shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                            <ArrowDownTrayIcon className="w-4 h-4" />
+                            Descargar PDF firmado
+                        </button>
+                    )}
+                </div>
+            )}
 
             <div className="flex gap-6 items-start">
                 <div className="flex-1 min-w-0">

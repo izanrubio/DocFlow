@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { PlusIcon, DocumentTextIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, DocumentTextIcon, ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import Layout from '../components/Layout';
 import UploadDocumentModal from '../components/UploadDocumentModal';
 import { getDocuments } from '../api/documents';
@@ -56,6 +56,7 @@ export default function Dashboard() {
         queryKey: ['documents', { status, page }],
         queryFn:  () => getDocuments({ status: status || undefined, page }).then((r) => r.data),
         placeholderData: (prev) => prev,
+        refetchInterval: 30000,
     });
 
     const documents = data?.data ?? [];
@@ -128,7 +129,8 @@ export default function Dashboard() {
                                         <p className="text-xs text-gray-400 truncate">{doc.original_filename}</p>
                                     </td>
                                     <td className="px-4 py-3">
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[doc.status]}`}>
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[doc.status]}`}>
+                                            {doc.status === 'completed' && <CheckCircleIcon className="w-3.5 h-3.5" />}
                                             {STATUS_LABEL[doc.status] ?? doc.status}
                                         </span>
                                     </td>
