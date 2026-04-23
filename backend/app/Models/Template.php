@@ -11,6 +11,11 @@ class Template extends Model
         'tenant_id', 'user_id', 'name', 'description', 'file_path',
     ];
 
+    protected $casts = [
+        'tenant_id' => 'integer',
+        'user_id'   => 'integer',
+    ];
+
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

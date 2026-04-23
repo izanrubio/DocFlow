@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\SignerController;
 use App\Http\Controllers\SigningController;
+use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('documents/{document}/send', [SignerController::class, 'send']);
 
     Route::get('documents/{id}/download', [DocumentController::class, 'download']);
+
+    Route::get('templates', [TemplateController::class, 'index']);
+    Route::post('templates', [TemplateController::class, 'store']);
+    Route::get('templates/{id}', [TemplateController::class, 'show']);
+    Route::put('templates/{id}', [TemplateController::class, 'update']);
+    Route::delete('templates/{id}', [TemplateController::class, 'destroy']);
+    Route::post('templates/{id}/use', [TemplateController::class, 'use']);
 });
 
 Route::get('sign/{token}', [SigningController::class, 'show']);

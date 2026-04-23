@@ -1,11 +1,11 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { HomeIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, DocumentTextIcon, RectangleStackIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 import * as authApi from '../api/auth';
 
 const NAV = [
-    { label: 'Dashboard',   href: '/dashboard', Icon: HomeIcon },
-    { label: 'Documentos',  href: '/dashboard', Icon: DocumentTextIcon },
+    { label: 'Dashboard',   href: '/dashboard',  Icon: HomeIcon,              match: (p) => p === '/dashboard' || p.startsWith('/documents') },
+    { label: 'Plantillas',  href: '/templates',  Icon: RectangleStackIcon,    match: (p) => p === '/templates' },
 ];
 
 export default function Layout({ children }) {
@@ -27,8 +27,8 @@ export default function Layout({ children }) {
                     <h1 className="text-xl font-bold text-indigo-600">DocFlow</h1>
                 </div>
                 <nav className="flex-1 p-4 space-y-1">
-                    {NAV.map(({ label, href, Icon }) => {
-                        const active = pathname === href || pathname.startsWith('/documents');
+                    {NAV.map(({ label, href, Icon, match }) => {
+                        const active = match(pathname);
                         return (
                             <Link
                                 key={label}

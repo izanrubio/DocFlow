@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PlusIcon, DocumentTextIcon, ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import Layout from '../components/Layout';
@@ -98,13 +98,21 @@ export default function Dashboard() {
         <Layout>
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Mis documentos</h1>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                    <PlusIcon className="w-4 h-4" />
-                    Subir documento
-                </button>
+                <div className="flex items-center gap-2">
+                    <Link
+                        to="/templates"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                        Desde plantilla
+                    </Link>
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                        <PlusIcon className="w-4 h-4" />
+                        Subir documento
+                    </button>
+                </div>
             </div>
 
             <div className="flex gap-1 mb-4 flex-wrap">

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Document, Page, pdfjs } from 'react-pdf';
 import {
@@ -116,9 +116,11 @@ function DownloadButton({ documentId }) {
 }
 
 export default function DocumentDetail() {
-    const { id }      = useParams();
-    const navigate    = useNavigate();
-    const queryClient = useQueryClient();
+    const { id }           = useParams();
+    const navigate         = useNavigate();
+    const { state }        = useLocation();
+    const queryClient      = useQueryClient();
+    const successMessage   = state?.successMessage ?? null;
 
     const [numPages, setNumPages]     = useState(null);
     const [pageNumber, setPageNumber] = useState(1);
@@ -230,6 +232,13 @@ export default function DocumentDetail() {
 
     return (
         <Layout>
+            {successMessage && (
+                <div className="mb-4 flex items-center gap-3 bg-indigo-50 border border-indigo-200 rounded-xl px-5 py-3">
+                    <CheckCircleIcon className="w-5 h-5 text-indigo-500 shrink-0" />
+                    <p className="text-sm font-medium text-indigo-800">{successMessage}</p>
+                </div>
+            )}
+
             <div className="flex items-center gap-3 mb-6">
                 <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-gray-600">
                     <ArrowLeftIcon className="w-5 h-5" />

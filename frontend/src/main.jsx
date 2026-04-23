@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import DocumentDetail from './pages/DocumentDetail';
+import Templates from './pages/Templates';
 import SignDocument from './pages/SignDocument';
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/documents/:id" element={<PrivateRoute><DocumentDetail /></PrivateRoute>} />
+          <Route path="/templates" element={<PrivateRoute><Templates /></PrivateRoute>} />
           <Route path="/sign/:token" element={<SignDocument />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
