@@ -5,277 +5,318 @@ namespace Database\Seeders;
 use App\Enums\DocumentEventType;
 use App\Enums\DocumentStatus;
 use App\Enums\SignerStatus;
+use App\Enums\TenantPlan;
 use App\Models\Document;
 use App\Models\DocumentEvent;
 use App\Models\Signature;
 use App\Models\Signer;
+use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use TCPDF;
 
 class TestDataSeeder extends Seeder
 {
+    private User $user;
     private int $tenantId;
-    private int $userId;
-    private string $placeholderPath = 'seeds/placeholder.pdf';
 
-    // Minimal 1x1 transparent PNG as base64 — used for fake signatures
-    private const FAKE_SIG = 'iVBORw0KGgoAAAANSUhEUgAAASwAAAAeCAYAAACKSH7RAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA'
-        . 'AXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABESURBVHgB7cEBDQAAAMKg909tDjdhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADgwQCRAAEQrRJRAAAAABJRU5ErkJggg==';
+    // Tiny 1×1 transparent PNG — placeholder signature image
+    private const FAKE_SIG = 'iVBORw0KGgoAAAANSUhEUgAAASwAAAAeCAYAAACKSH7RAAAACXBIWXMAAA7EAAAOxAGVKw4b'
+        . 'AAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABESURBVHgB7cEBDQAAAMKg909tDjdh'
+        . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        . 'AAAA4MEAkQABEK0SUQAAAABJRkJggg==';
 
     public function run(): void
     {
-        $user = User::first();
-        if (!$user) {
-            $this->command->error('No user found. Run DatabaseSeeder first.');
-            return;
-        }
-
-        $this->tenantId = $user->tenant_id;
-        $this->userId   = $user->id;
-
+        $this->createUser();
         $this->ensurePlaceholderPdf();
 
-        $this->createDraftDocuments();
-        $this->createSentDocuments();
-        $this->createInProgressDocuments();
-        $this->createCompletedDocuments();
-        $this->createExpiredDocuments();
-        $this->createCancelledDocuments();
+        $this->seedDrafts();
+        $this->seedSent();
+        $this->seedInProgress();
+        $this->seedCompleted();
+        $this->seedExpired();
+        $this->seedCancelled();
 
-        $this->command->info('Test documents seeded successfully.');
+        $total = Document::where('tenant_id', $this->tenantId)->count();
+        $this->command->info("Created user test@example.com (password: password) · {$total} documents seeded.");
     }
 
-    // -------------------------------------------------------------------------
-    // Draft documents — no signers added yet
-    // -------------------------------------------------------------------------
-    private function createDraftDocuments(): void
+    // =========================================================================
+    // User + Tenant
+    // =========================================================================
+
+    private function createUser(): void
     {
-        $drafts = [
-            ['title' => 'Contrato de servicios con Acme Corp',       'days_ago' => 1],
-            ['title' => 'NDA con inversor seed',                     'days_ago' => 2],
-            ['title' => 'Propuesta comercial Q2 2026',               'days_ago' => 3],
-            ['title' => 'Acuerdo de colaboración con StartupXYZ',    'days_ago' => 5],
-            ['title' => 'Contrato de arrendamiento oficina Madrid',  'days_ago' => 7],
+        $tenant = Tenant::create([
+            'name' => 'Empresa Demo',
+            'slug' => 'empresa-demo',
+            'plan' => TenantPlan::Pro,
+        ]);
+
+        $this->user = User::create([
+            'tenant_id'          => $tenant->id,
+            'name'               => 'Demo User',
+            'email'              => 'test@example.com',
+            'password'           => Hash::make('password'),
+            'email_verified_at'  => now(),
+        ]);
+
+        $this->tenantId = $tenant->id;
+    }
+
+    // =========================================================================
+    // Drafts — sin firmantes
+    // =========================================================================
+
+    private function seedDrafts(): void
+    {
+        $items = [
+            ['title' => 'Contrato de servicios con Acme Corp',                'days' => 0],
+            ['title' => 'NDA con inversor seed — Borrador',                   'days' => 1],
+            ['title' => 'Propuesta comercial Q2 2026',                        'days' => 2],
+            ['title' => 'Acuerdo de colaboración con StartupXYZ',             'days' => 4],
+            ['title' => 'Contrato de arrendamiento oficina Madrid',           'days' => 6],
+            ['title' => 'Contrato de mantenimiento infraestructura cloud',    'days' => 10],
+            ['title' => 'Convenio de prácticas universitarias 2026',          'days' => 14],
         ];
 
-        foreach ($drafts as $d) {
-            $doc = $this->makeDocument($d['title'], DocumentStatus::Draft, $d['days_ago']);
-            $this->addEvent($doc, DocumentEventType::Created, $d['days_ago']);
+        foreach ($items as $d) {
+            $doc = $this->doc($d['title'], DocumentStatus::Draft, $d['days']);
+            $this->event($doc, DocumentEventType::Created, $d['days']);
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Sent documents — all signers pending, no one has opened yet
-    // -------------------------------------------------------------------------
-    private function createSentDocuments(): void
+    // =========================================================================
+    // Sent — todos pendientes
+    // =========================================================================
+
+    private function seedSent(): void
     {
-        $sent = [
-            ['title' => 'Contrato de prestación de servicios — Diseño web',  'days_ago' => 1,  'expires_in' => 14],
-            ['title' => 'Acuerdo marco con Distribuidora Norte',              'days_ago' => 3,  'expires_in' => 10],
-            ['title' => 'NDA con candidato a CTO',                           'days_ago' => 5,  'expires_in' => 7],
-            ['title' => 'Renovación contrato anual — ClienteAlpha',          'days_ago' => 6,  'expires_in' => 30],
+        $items = [
+            ['title' => 'Contrato de prestación de servicios — Diseño web',  'days' => 1,  'exp' => 14],
+            ['title' => 'Acuerdo marco con Distribuidora Norte',              'days' => 3,  'exp' => 10],
+            ['title' => 'NDA con candidato a CTO',                           'days' => 5,  'exp' => 7],
+            ['title' => 'Renovación contrato anual — ClienteAlpha',          'days' => 6,  'exp' => 30],
+            ['title' => 'Contrato de consultoría estratégica',               'days' => 8,  'exp' => 21],
+            ['title' => 'Acuerdo de distribución exclusiva — Región Sur',    'days' => 12, 'exp' => 45],
         ];
 
-        foreach ($sent as $d) {
-            $expiresAt = now()->addDays($d['expires_in']);
-            $doc = $this->makeDocument($d['title'], DocumentStatus::Sent, $d['days_ago'], $expiresAt);
-            $this->addEvent($doc, DocumentEventType::Created, $d['days_ago'] + 1);
-            $this->addEvent($doc, DocumentEventType::Sent,    $d['days_ago']);
-            $this->addSigner($doc, 'Carlos Martínez',  'carlos@cliente.com',  1, SignerStatus::Pending, null);
-            $this->addSigner($doc, 'Ana Rodríguez',    'ana@cliente.com',     2, SignerStatus::Pending, null);
+        foreach ($items as $d) {
+            $doc = $this->doc($d['title'], DocumentStatus::Sent, $d['days'], now()->addDays($d['exp']));
+            $this->event($doc, DocumentEventType::Created, $d['days'] + 1);
+            $this->event($doc, DocumentEventType::Sent,    $d['days']);
+            $this->signer($doc, 'Carlos Martínez', 'carlos.martinez@cliente.com',  1);
+            $this->signer($doc, 'Ana Rodríguez',   'ana.rodriguez@cliente.com',    2);
         }
     }
 
-    // -------------------------------------------------------------------------
-    // In-progress — some signers have signed, others pending
-    // -------------------------------------------------------------------------
-    private function createInProgressDocuments(): void
+    // =========================================================================
+    // In-progress — algunos firmantes han firmado
+    // =========================================================================
+
+    private function seedInProgress(): void
     {
-        // 1 of 2 signed
-        $doc = $this->makeDocument(
-            'Contrato de desarrollo — Proyecto Phoenix',
-            DocumentStatus::InProgress, 4, now()->addDays(5)
-        );
-        $this->addEvent($doc, DocumentEventType::Created, 5);
-        $this->addEvent($doc, DocumentEventType::Sent,    4);
-        $s1 = $this->addSigner($doc, 'Laura Sánchez', 'laura@phoenix.com', 1, SignerStatus::Signed, 3);
-        $this->addSignature($s1, $doc, 3);
-        $this->addEvent($doc, DocumentEventType::Viewed,  3, $s1);
-        $this->addEvent($doc, DocumentEventType::Signed,  3, $s1);
-        $this->addSigner($doc, 'Pedro Gómez', 'pedro@phoenix.com', 2, SignerStatus::Pending, null);
+        // --- caduca en < 20h (badge rojo "¡Caduca pronto!")
+        $doc = $this->doc('Contrato urgente — vence mañana', DocumentStatus::InProgress, 8, now()->addHours(18));
+        $this->event($doc, DocumentEventType::Created, 9);
+        $this->event($doc, DocumentEventType::Sent, 8);
+        $s = $this->signer($doc, 'Roberto Díaz',  'roberto@urgente.com', 1, SignerStatus::Signed, 4);
+        $this->sig($s, $doc);
+        $this->event($doc, DocumentEventType::Viewed, 5, $s);
+        $this->event($doc, DocumentEventType::Signed, 4, $s);
+        $this->signer($doc, 'Silvia Moreno', 'silvia@urgente.com', 2);
 
-        // 1 of 3 signed
-        $doc2 = $this->makeDocument(
-            'Acuerdo de confidencialidad — Proyecto Aurora',
-            DocumentStatus::InProgress, 8, now()->addDays(20)
-        );
-        $this->addEvent($doc2, DocumentEventType::Created, 9);
-        $this->addEvent($doc2, DocumentEventType::Sent,    8);
-        $s2a = $this->addSigner($doc2, 'Marta López',    'marta@aurora.com',  1, SignerStatus::Signed, 6);
-        $this->addSignature($s2a, $doc2, 6);
-        $this->addEvent($doc2, DocumentEventType::Viewed,  7, $s2a);
-        $this->addEvent($doc2, DocumentEventType::Signed,  6, $s2a);
-        $this->addSigner($doc2, 'Javier Torres', 'javier@aurora.com', 2, SignerStatus::Viewed, null);
-        $this->addSigner($doc2, 'Elena Ruiz',    'elena@aurora.com',  3, SignerStatus::Pending, null);
+        // --- caduca en 4 días (badge amarillo)
+        $doc = $this->doc('NDA con proveedor cloud — caduca en 4 días', DocumentStatus::InProgress, 6, now()->addDays(4));
+        $this->event($doc, DocumentEventType::Created, 7);
+        $this->event($doc, DocumentEventType::Sent, 6);
+        $s = $this->signer($doc, 'Ignacio Blanco', 'ignacio@cloud.com', 1, SignerStatus::Signed, 3);
+        $this->sig($s, $doc);
+        $this->event($doc, DocumentEventType::Signed, 3, $s);
+        $this->signer($doc, 'Natalia Vega', 'natalia@cloud.com', 2, SignerStatus::Viewed);
 
-        // Caduca pronto (< 48h)
-        $doc3 = $this->makeDocument(
-            'Contrato urgente — vence mañana',
-            DocumentStatus::InProgress, 10, now()->addHours(20)
-        );
-        $this->addEvent($doc3, DocumentEventType::Created, 11);
-        $this->addEvent($doc3, DocumentEventType::Sent,    10);
-        $s3 = $this->addSigner($doc3, 'Roberto Díaz', 'roberto@urgente.com', 1, SignerStatus::Signed, 5);
-        $this->addSignature($s3, $doc3, 5);
-        $this->addEvent($doc3, DocumentEventType::Signed, 5, $s3);
-        $this->addSigner($doc3, 'Silvia Moreno', 'silvia@urgente.com', 2, SignerStatus::Pending, null);
+        // --- 1/2 firmado
+        $doc = $this->doc('Contrato de desarrollo — Proyecto Phoenix', DocumentStatus::InProgress, 4, now()->addDays(12));
+        $this->event($doc, DocumentEventType::Created, 5);
+        $this->event($doc, DocumentEventType::Sent, 4);
+        $s = $this->signer($doc, 'Laura Sánchez', 'laura@phoenix.com', 1, SignerStatus::Signed, 2);
+        $this->sig($s, $doc);
+        $this->event($doc, DocumentEventType::Viewed, 3, $s);
+        $this->event($doc, DocumentEventType::Signed, 2, $s);
+        $this->signer($doc, 'Pedro Gómez', 'pedro@phoenix.com', 2);
 
-        // Caduca en menos de 7 días (< 7d but > 2d)
-        $doc4 = $this->makeDocument(
-            'NDA con proveedor cloud — caduca en 4 días',
-            DocumentStatus::InProgress, 3, now()->addDays(4)
-        );
-        $this->addEvent($doc4, DocumentEventType::Created, 4);
-        $this->addEvent($doc4, DocumentEventType::Sent,    3);
-        $s4 = $this->addSigner($doc4, 'Ignacio Blanco', 'ignacio@cloud.com', 1, SignerStatus::Signed, 2);
-        $this->addSignature($s4, $doc4, 2);
-        $this->addEvent($doc4, DocumentEventType::Signed, 2, $s4);
-        $this->addSigner($doc4, 'Natalia Vega', 'natalia@cloud.com', 2, SignerStatus::Pending, null);
+        // --- 1/3 firmado
+        $doc = $this->doc('Acuerdo de confidencialidad — Proyecto Aurora', DocumentStatus::InProgress, 10, now()->addDays(20));
+        $this->event($doc, DocumentEventType::Created, 11);
+        $this->event($doc, DocumentEventType::Sent, 10);
+        $s = $this->signer($doc, 'Marta López',    'marta@aurora.com',  1, SignerStatus::Signed, 7);
+        $this->sig($s, $doc);
+        $this->event($doc, DocumentEventType::Viewed, 8, $s);
+        $this->event($doc, DocumentEventType::Signed, 7, $s);
+        $this->signer($doc, 'Javier Torres', 'javier@aurora.com', 2, SignerStatus::Viewed);
+        $this->signer($doc, 'Elena Ruiz',    'elena@aurora.com',  3);
+
+        // --- 2/3 firmado
+        $doc = $this->doc('Contrato de licencia software — Multi-firma', DocumentStatus::InProgress, 3, now()->addDays(25));
+        $this->event($doc, DocumentEventType::Created, 4);
+        $this->event($doc, DocumentEventType::Sent, 3);
+        $s1 = $this->signer($doc, 'Daniel Castro',  'daniel@licencia.com', 1, SignerStatus::Signed, 2);
+        $this->sig($s1, $doc);
+        $this->event($doc, DocumentEventType::Signed, 2, $s1);
+        $s2 = $this->signer($doc, 'Pilar Méndez',   'pilar@licencia.com',  2, SignerStatus::Signed, 1);
+        $this->sig($s2, $doc);
+        $this->event($doc, DocumentEventType::Signed, 1, $s2);
+        $this->signer($doc, 'Tomás Alonso',  'tomas@licencia.com',  3);
     }
 
-    // -------------------------------------------------------------------------
-    // Completed — all signed, with reminder events mixed in
-    // -------------------------------------------------------------------------
-    private function createCompletedDocuments(): void
+    // =========================================================================
+    // Completed
+    // =========================================================================
+
+    private function seedCompleted(): void
     {
-        $completed = [
+        $items = [
             [
-                'title'    => 'Contrato servicios web — Firmado',
-                'days_ago' => 30,
-                'signers'  => [
-                    ['name' => 'Antonio Fernández', 'email' => 'antonio@web.com'],
-                    ['name' => 'Beatriz Castro',    'email' => 'beatriz@web.com'],
+                'title'   => 'Contrato servicios web — Completado',
+                'days'    => 30,
+                'signers' => [['Antonio Fernández', 'antonio@web.com'], ['Beatriz Castro', 'beatriz@web.com']],
+            ],
+            [
+                'title'   => 'NDA con socio tecnológico',
+                'days'    => 20,
+                'signers' => [['Diego Morales', 'diego@socio.com'], ['Cristina Rubio', 'cristina@socio.com']],
+            ],
+            [
+                'title'   => 'Acuerdo de distribución internacional',
+                'days'    => 45,
+                'signers' => [
+                    ['Francisco León',  'francisco@dist.com'],
+                    ['Isabel Ortega',   'isabel@dist.com'],
+                    ['Manuel Serrano',  'manuel@dist.com'],
                 ],
             ],
             [
-                'title'    => 'NDA con socio tecnológico — Completado',
-                'days_ago' => 20,
-                'signers'  => [
-                    ['name' => 'Diego Morales',  'email' => 'diego@socio.com'],
-                    ['name' => 'Cristina Rubio', 'email' => 'cristina@socio.com'],
-                ],
+                'title'   => 'Contrato de arrendamiento — Local comercial Málaga',
+                'days'    => 60,
+                'signers' => [['Rosa Peña', 'rosa@local.com'], ['Jorge Herrero', 'jorge@local.com']],
             ],
             [
-                'title'    => 'Acuerdo de distribución internacional',
-                'days_ago' => 45,
-                'signers'  => [
-                    ['name' => 'Francisco León',  'email' => 'francisco@dist.com'],
-                    ['name' => 'Isabel Ortega',   'email' => 'isabel@dist.com'],
-                    ['name' => 'Manuel Serrano',  'email' => 'manuel@dist.com'],
-                ],
+                'title'   => 'Acuerdo de inversión — Ronda seed',
+                'days'    => 15,
+                'signers' => [['Álvaro Delgado', 'alvaro@invest.com'], ['Patricia Lozano', 'patricia@invest.com']],
             ],
             [
-                'title'    => 'Contrato de arrendamiento — Local comercial',
-                'days_ago' => 60,
-                'signers'  => [
-                    ['name' => 'Rosa Peña',      'email' => 'rosa@local.com'],
-                    ['name' => 'Jorge Herrero',  'email' => 'jorge@local.com'],
-                ],
+                'title'   => 'Contrato de agencia exclusiva — Zona Norte',
+                'days'    => 90,
+                'signers' => [['Víctor Heredia', 'victor@agencia.com'], ['Carmen Fuentes', 'carmen@agencia.com']],
             ],
             [
-                'title'    => 'Acuerdo de inversión ronda seed',
-                'days_ago' => 15,
-                'signers'  => [
-                    ['name' => 'Álvaro Delgado', 'email' => 'alvaro@invest.com'],
-                    ['name' => 'Patricia Lozano','email' => 'patricia@invest.com'],
+                'title'   => 'Convenio de colaboración con universidad',
+                'days'    => 120,
+                'signers' => [
+                    ['Prof. Ramírez',  'ramirez@uni.es'],
+                    ['Decana García',  'garcia@uni.es'],
                 ],
             ],
         ];
 
-        foreach ($completed as $d) {
-            $doc = $this->makeDocument($d['title'], DocumentStatus::Completed, $d['days_ago']);
-            $this->addEvent($doc, DocumentEventType::Created, $d['days_ago'] + 2);
-            $this->addEvent($doc, DocumentEventType::Sent,    $d['days_ago'] + 1);
+        foreach ($items as $d) {
+            $doc = $this->doc($d['title'], DocumentStatus::Completed, $d['days']);
+            $this->event($doc, DocumentEventType::Created, $d['days'] + 2);
+            $this->event($doc, DocumentEventType::Sent,    $d['days'] + 1);
 
-            $signedAt = $d['days_ago'];
-            foreach ($d['signers'] as $i => $s) {
-                $signer = $this->addSigner($doc, $s['name'], $s['email'], $i + 1, SignerStatus::Signed, $signedAt - $i);
-                $this->addSignature($signer, $doc, $signedAt - $i);
-                $this->addEvent($doc, DocumentEventType::Viewed,  $signedAt - $i + 1, $signer);
-                $this->addEvent($doc, DocumentEventType::Signed,  $signedAt - $i, $signer);
+            foreach ($d['signers'] as $i => [$name, $email]) {
+                $offset = $d['days'] - $i;
+                $s = $this->signer($doc, $name, $email, $i + 1, SignerStatus::Signed, $offset);
+                $this->sig($s, $doc);
+                $this->event($doc, DocumentEventType::Viewed,  $offset + 1, $s);
+                $this->event($doc, DocumentEventType::Signed,  $offset, $s);
             }
 
-            $this->addEvent($doc, DocumentEventType::Completed, $signedAt);
+            $this->event($doc, DocumentEventType::Completed, $d['days']);
         }
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Expired
-    // -------------------------------------------------------------------------
-    private function createExpiredDocuments(): void
+    // =========================================================================
+
+    private function seedExpired(): void
     {
-        $expired = [
-            ['title' => 'Propuesta de consultoría — Caducado',       'days_ago' => 20, 'expired_days_ago' => 5],
-            ['title' => 'Contrato de mantenimiento — Expirado',      'days_ago' => 35, 'expired_days_ago' => 10],
-            ['title' => 'NDA con candidato — No firmado a tiempo',   'days_ago' => 15, 'expired_days_ago' => 2],
+        $items = [
+            ['title' => 'Propuesta de consultoría — Caducado',      'sent' => 25, 'exp_ago' => 5],
+            ['title' => 'Contrato de mantenimiento — Expirado',     'sent' => 40, 'exp_ago' => 10],
+            ['title' => 'NDA con candidato — No firmado a tiempo',  'sent' => 18, 'exp_ago' => 2],
+            ['title' => 'Contrato SaaS — Plazo superado',           'sent' => 50, 'exp_ago' => 15],
         ];
 
-        foreach ($expired as $d) {
-            $expiresAt = now()->subDays($d['expired_days_ago']);
-            $doc = $this->makeDocument($d['title'], DocumentStatus::Expired, $d['days_ago'], $expiresAt);
-            $this->addEvent($doc, DocumentEventType::Created, $d['days_ago'] + 1);
-            $this->addEvent($doc, DocumentEventType::Sent,    $d['days_ago']);
-            $this->addSigner($doc, 'Firmante Pendiente', 'pendiente@test.com', 1, SignerStatus::Pending, null);
-            $this->addEvent($doc, DocumentEventType::ReminderSent, $d['days_ago'] - 3);
-            $this->addEvent($doc, DocumentEventType::Expired, $d['expired_days_ago']);
+        foreach ($items as $d) {
+            $expiresAt = now()->subDays($d['exp_ago']);
+            $doc = $this->doc($d['title'], DocumentStatus::Expired, $d['sent'], $expiresAt);
+            $this->event($doc, DocumentEventType::Created,      $d['sent'] + 1);
+            $this->event($doc, DocumentEventType::Sent,         $d['sent']);
+            $this->signer($doc, 'Firmante Pendiente', 'pendiente@test.com', 1);
+            $this->event($doc, DocumentEventType::ReminderSent, $d['sent'] - 5);
+            $this->event($doc, DocumentEventType::Expired,      $d['exp_ago']);
         }
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Cancelled
-    // -------------------------------------------------------------------------
-    private function createCancelledDocuments(): void
+    // =========================================================================
+
+    private function seedCancelled(): void
     {
-        $doc = $this->makeDocument('Contrato cancelado por el cliente', DocumentStatus::Cancelled, 12);
-        $this->addEvent($doc, DocumentEventType::Created, 13);
-        $this->addEvent($doc, DocumentEventType::Sent,    12);
-        $this->addSigner($doc, 'Cliente Cancelado', 'cancel@test.com', 1, SignerStatus::Pending, null);
+        $items = [
+            ['title' => 'Contrato cancelado a petición del cliente', 'days' => 15],
+            ['title' => 'Acuerdo retirado — Condiciones no aceptadas', 'days' => 30],
+        ];
+
+        foreach ($items as $d) {
+            $doc = $this->doc($d['title'], DocumentStatus::Cancelled, $d['days']);
+            $this->event($doc, DocumentEventType::Created, $d['days'] + 1);
+            $this->event($doc, DocumentEventType::Sent,    $d['days']);
+            $this->signer($doc, 'Cliente', 'cliente@test.com', 1);
+        }
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Helpers
-    // -------------------------------------------------------------------------
-    private function makeDocument(
+    // =========================================================================
+
+    private function doc(
         string $title,
         DocumentStatus $status,
         int $daysAgo,
         ?Carbon $expiresAt = null
     ): Document {
-        $createdAt = now()->subDays($daysAgo)->subHours(rand(0, 8));
+        $at = now()->subDays($daysAgo)->subHours(rand(0, 8));
 
         return Document::create([
             'tenant_id'         => $this->tenantId,
-            'user_id'           => $this->userId,
+            'user_id'           => $this->user->id,
             'title'             => $title,
-            'file_path'         => $this->placeholderPath,
-            'original_filename' => \Str::slug($title) . '.pdf',
+            'file_path'         => 'seeds/placeholder.pdf',
+            'original_filename' => Str::slug($title) . '.pdf',
             'status'            => $status,
             'expires_at'        => $expiresAt,
-            'created_at'        => $createdAt,
-            'updated_at'        => $createdAt,
+            'created_at'        => $at,
+            'updated_at'        => $at,
         ]);
     }
 
-    private function addSigner(
+    private function signer(
         Document $doc,
         string $name,
         string $email,
         int $order,
-        SignerStatus $status,
-        ?int $signedDaysAgo
+        SignerStatus $status = SignerStatus::Pending,
+        ?int $signedDaysAgo = null
     ): Signer {
         return Signer::create([
             'document_id' => $doc->id,
@@ -288,32 +329,33 @@ class TestDataSeeder extends Seeder
         ]);
     }
 
-    private function addSignature(Signer $signer, Document $doc, int $daysAgo): void
+    private function sig(Signer $signer, Document $doc): void
     {
         Signature::create([
             'signer_id'      => $signer->id,
             'document_id'    => $doc->id,
             'signature_data' => 'data:image/png;base64,' . self::FAKE_SIG,
             'ip_address'     => '192.168.' . rand(1, 254) . '.' . rand(1, 254),
-            'user_agent'     => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0',
+            'user_agent'     => 'Mozilla/5.0 (compatible; DocFlow/test)',
         ]);
     }
 
-    private function addEvent(Document $doc, DocumentEventType $type, int $daysAgo, ?Signer $signer = null): void
+    private function event(Document $doc, DocumentEventType $type, int $daysAgo, ?Signer $signer = null): void
     {
+        $at = now()->subDays($daysAgo)->subMinutes(rand(0, 59));
         DocumentEvent::create([
             'document_id' => $doc->id,
             'tenant_id'   => $this->tenantId,
             'signer_id'   => $signer?->id,
             'type'        => $type,
-            'created_at'  => now()->subDays($daysAgo)->subMinutes(rand(0, 60)),
-            'updated_at'  => now()->subDays($daysAgo),
+            'created_at'  => $at,
+            'updated_at'  => $at,
         ]);
     }
 
     private function ensurePlaceholderPdf(): void
     {
-        if (Storage::disk('documents')->exists($this->placeholderPath)) {
+        if (Storage::disk('documents')->exists('seeds/placeholder.pdf')) {
             return;
         }
 
@@ -330,8 +372,8 @@ class TestDataSeeder extends Seeder
         $pdf->Cell(0, 12, 'Documento de prueba — DocFlow', 0, 1, 'C');
         $pdf->SetFont('helvetica', '', 10);
         $pdf->SetTextColor(100, 100, 100);
-        $pdf->Cell(0, 8, 'Este es un documento generado para pruebas del sistema.', 0, 1, 'C');
+        $pdf->Cell(0, 8, 'Este documento es un placeholder generado para pruebas.', 0, 1, 'C');
 
-        Storage::disk('documents')->put($this->placeholderPath, $pdf->Output('placeholder.pdf', 'S'));
+        Storage::disk('documents')->put('seeds/placeholder.pdf', $pdf->Output('placeholder.pdf', 'S'));
     }
 }
