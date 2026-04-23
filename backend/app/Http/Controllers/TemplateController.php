@@ -61,9 +61,10 @@ class TemplateController extends Controller
         $request->validate([
             'title'      => ['required', 'string', 'max:255'],
             'expires_at' => ['nullable', 'date', 'after:today'],
+            'values'     => ['nullable', 'array'],
         ]);
 
-        $document = $this->service->use($request->user(), $id, $request->only('title', 'expires_at'));
+        $document = $this->service->use($request->user(), $id, $request->only('title', 'expires_at', 'values'));
 
         return $this->success(new DocumentResource($document), 'Document created', 201);
     }

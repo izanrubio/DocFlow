@@ -6,6 +6,7 @@ import {
     EyeIcon,
     TrashIcon,
     SparklesIcon,
+    PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import Layout from '../components/Layout';
 import UploadTemplateModal from '../components/UploadTemplateModal';
@@ -22,6 +23,16 @@ function TemplateBadge({ isSystem }) {
     );
 }
 
+function VariablesBadge({ hasVariables }) {
+    if (!hasVariables) return null;
+    return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+            <PencilSquareIcon className="w-3 h-3" />
+            Rellenable
+        </span>
+    );
+}
+
 function TemplateCard({ template, onUse, onDelete }) {
     return (
         <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow">
@@ -33,6 +44,7 @@ function TemplateCard({ template, onUse, onDelete }) {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                         <h3 className="text-sm font-semibold text-gray-900 truncate">{template.name}</h3>
                         <TemplateBadge isSystem={template.is_system} />
+                        <VariablesBadge hasVariables={template.has_variables} />
                     </div>
                     {template.description && (
                         <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{template.description}</p>

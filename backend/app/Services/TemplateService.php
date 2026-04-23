@@ -7,10 +7,12 @@ use App\Enums\DocumentStatus;
 use App\Models\Document;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\Templates\TemplateGeneratorFactory;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class TemplateService
 {
@@ -91,7 +93,29 @@ class TemplateService
             Str::uuid()
         );
 
-        Storage::disk('documents')->copy($template->file_path, $newPath);
+        if (!empty($template->variables)) {
+            $values = $data['values'] ?? [];
+
+            $missing = collect($template->variables)
+                ->filter(fn ($v) => $v['required'] ?? false)
+                ->pluck('key')
+                ->reject(fn ($k) => isset($values[$k]) && $values[$k] !== '');
+
+            if ($missing->isNotEmpty()) {
+                throw ValidationException::withMessages(
+                    $missing->mapWithKeys(fn ($k) => ["values.{$k}" => ["El campo {$k} es obligatorio."]])->all()
+                );
+            }
+
+            $generator = TemplateGeneratorFactory::make($template);
+            if ($generator) {
+                Storage::disk('documents')->put($newPath, $generator->generate($values));
+            } else {
+                Storage::disk('documents')->copy($template->file_path, $newPath);
+            }
+        } else {
+            Storage::disk('documents')->copy($template->file_path, $newPath);
+        }
 
         $document = Document::create([
             'tenant_id'         => $user->tenant_id,

@@ -8,12 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Template extends Model
 {
     protected $fillable = [
-        'tenant_id', 'user_id', 'name', 'description', 'file_path',
+        'tenant_id', 'user_id', 'name', 'description', 'file_path', 'slug', 'variables',
     ];
 
     protected $casts = [
         'tenant_id' => 'integer',
         'user_id'   => 'integer',
+        'variables' => 'array',
     ];
 
     public function tenant(): BelongsTo

@@ -19,10 +19,12 @@ class TemplateResource extends JsonResource
                 'id'   => $this->user->id,
                 'name' => $this->user->name,
             ] : null),
-            'preview_url' => $this->when(
+            'preview_url'   => $this->when(
                 isset($this->resource->preview_url),
                 $this->resource->preview_url ?? null
             ),
+            'variables'     => $this->resource->variables ?? [],
+            'has_variables' => !empty($this->resource->variables),
         ];
     }
 }
