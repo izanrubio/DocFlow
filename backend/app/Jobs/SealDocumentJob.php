@@ -209,7 +209,6 @@ class SealDocumentJob implements ShouldQueue, NotTenantAware
             $y += 6;
         }
 
-        $hash = hash('sha256', file_get_contents(sys_get_temp_dir() . '/docflow_orig_') ?: $document->file_path . $document->id);
         $originalContents = Storage::disk('documents')->get($document->file_path);
         $hash = hash('sha256', $originalContents ?: '');
 

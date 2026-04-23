@@ -36,7 +36,7 @@ class DocumentResource extends JsonResource
                 'created_at' => $e->created_at->toIso8601String(),
             ])),
             'preview_url'       => $this->when($this->resource->preview_url !== null, $this->resource->preview_url),
-            'has_signed_file'   => $this->signed_file_path !== null,
+            'has_signed_file'   => $this->resource->signed_file_path !== null,
         ];
     }
 }
