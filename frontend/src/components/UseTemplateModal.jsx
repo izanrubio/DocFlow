@@ -108,8 +108,10 @@ export default function UseTemplateModal({ template, onClose }) {
         },
     });
 
-    const generalError = mutation.isError && !Object.keys(errors).length
-        ? (mutation.error?.response?.data?.message ?? 'Error al crear el documento.')
+    const footerError = mutation.isError
+        ? (Object.keys(errors).length
+            ? 'Hay campos obligatorios sin completar. Revísalos arriba.'
+            : (mutation.error?.response?.data?.message ?? 'Error al crear el documento.'))
         : null;
 
     const handleStep1Next = (e) => {
@@ -221,14 +223,14 @@ export default function UseTemplateModal({ template, onClose }) {
                                 </div>
                             ))}
 
-                            {generalError && (
-                                <p className="text-sm text-red-600">{generalError}</p>
-                            )}
                         </form>
                     )}
                 </div>
 
-                <div className="flex justify-between gap-3 px-6 py-4 border-t border-gray-200 shrink-0">
+                <div className="flex flex-col gap-3 px-6 py-4 border-t border-gray-200 shrink-0">
+                    {footerError && (
+                        <p className="text-sm text-red-600 text-center">{footerError}</p>
+                    )}
                     {step === 1 ? (
                         <>
                             <button type="button" onClick={onClose} disabled={mutation.isPending}
