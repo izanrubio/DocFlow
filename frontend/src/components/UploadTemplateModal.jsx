@@ -1,13 +1,13 @@
 import { useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { XMarkIcon, DocumentArrowUpIcon, ArrowUpTrayIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, DocumentArrowUpIcon, ArrowUpTrayIcon, ExclamationTriangleIcon, CheckCircleIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { createTemplate } from '../api/templates';
 import { useBillingUsage } from '../hooks/useBillingUsage';
 
 const MAX_SIZE = 20 * 1024 * 1024;
 
-export default function UploadTemplateModal({ onClose }) {
+export default function UploadTemplateModal({ onClose, onUploaded }) {
     const queryClient  = useQueryClient();
     const fileInputRef = useRef(null);
     const { data: billing } = useBillingUsage();
@@ -16,18 +16,24 @@ export default function UploadTemplateModal({ onClose }) {
     const tplLimit = billing?.usage?.templates_limit ?? billing?.limits?.templates ?? -1;
     const atLimit  = tplLimit !== -1 && tplUsed >= tplLimit;
 
-    const [name, setName]         = useState('');
-    const [desc, setDesc]         = useState('');
-    const [file, setFile]         = useState(null);
-    const [progress, setProgress] = useState(0);
-    const [dragOver, setDragOver] = useState(false);
-    const [errors, setErrors]     = useState({});
+    const [name, setName]               = useState('');
+    const [desc, setDesc]               = useState('');
+    const [file, setFile]               = useState(null);
+    const [progress, setProgress]       = useState(0);
+    const [dragOver, setDragOver]       = useState(false);
+    const [errors, setErrors]           = useState({});
+    const [uploadedTemplate, setUploadedTemplate] = useState(null);
 
     const mutation = useMutation({
         mutationFn: (fd) => createTemplate(fd),
-        onSuccess: () => {
+        onSuccess: (res) => {
             queryClient.invalidateQueries({ queryKey: ['templates'] });
-            onClose();
+            const tpl = res.data.data;
+            if ((tpl.variables_detected ?? 0) > 0 || onUploaded) {
+                setUploadedTemplate(tpl);
+            } else {
+                onClose();
+            }
         },
         onError: (err) => {
             if (err.response?.status === 422) setErrors(err.response.data.errors ?? {});
@@ -66,6 +72,71 @@ export default function UploadTemplateModal({ onClose }) {
     };
 
     const fmt = (b) => b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`;
+
+    if (uploadedTemplate) {
+        const varCount = uploadedTemplate.variables_detected ?? 0;
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+                    <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                        <h2 className="text-lg font-semibold text-gray-900">Plantilla creada</h2>
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                            <XMarkIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <CheckCircleIcon className="w-8 h-8 text-green-500 shrink-0" />
+                            <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                    «{uploadedTemplate.name}» subida correctamente.
+                                </p>
+                                {varCount > 0 ? (
+                                    <p className="text-sm text-gray-500 mt-0.5">
+                                        Se detectaron <span className="font-medium text-indigo-600">{varCount} variable{varCount !== 1 ? 's' : ''}</span> en el PDF.
+                                    </p>
+                                ) : (
+                                    <p className="text-sm text-gray-500 mt-0.5">No se detectaron variables automáticamente.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {varCount > 0 && (
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                                <p className="text-xs text-indigo-700 font-medium mb-1.5">Variables detectadas:</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {uploadedTemplate.variables.map((v) => (
+                                        <span key={v.key} className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-mono">
+                                            {`{{${v.key}}}`}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <p className="text-xs text-gray-400">
+                            Puedes editar las etiquetas, tipos y campos obligatorios de cada variable desde la página de plantillas.
+                        </p>
+                    </div>
+                    <div className="flex justify-end gap-3 px-6 pb-6">
+                        <button onClick={onClose}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Cerrar
+                        </button>
+                        {(varCount > 0 || true) && onUploaded && (
+                            <button
+                                onClick={() => { onClose(); onUploaded(uploadedTemplate); }}
+                                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+                            >
+                                <PencilSquareIcon className="w-4 h-4" />
+                                {varCount > 0 ? 'Ver y editar variables' : 'Añadir variables'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

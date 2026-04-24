@@ -56,6 +56,21 @@ class TemplateController extends Controller
         return $this->success(null, 'Template deleted');
     }
 
+    public function variables(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'variables'              => ['present', 'array'],
+            'variables.*.key'        => ['required', 'string', 'regex:/^[a-z][a-z0-9_]*$/'],
+            'variables.*.label'      => ['required', 'string', 'max:100'],
+            'variables.*.type'       => ['required', 'in:text,number,date,textarea'],
+            'variables.*.required'   => ['required', 'boolean'],
+        ]);
+
+        $template = $this->service->updateVariables($request->user(), $id, $request->input('variables'));
+
+        return $this->success(new TemplateResource($template), 'Variables actualizadas');
+    }
+
     public function use(Request $request, int $id): JsonResponse
     {
         $request->validate([

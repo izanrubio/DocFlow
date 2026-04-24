@@ -8,7 +8,9 @@ use App\Models\Document;
 use App\Models\Template;
 use App\Models\User;
 use App\Services\PlanService;
+use App\Services\Templates\PdfVariableExtractor;
 use App\Services\Templates\TemplateGeneratorFactory;
+use App\Services\Templates\UserTemplatePdfProcessor;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +19,11 @@ use Illuminate\Validation\ValidationException;
 
 class TemplateService
 {
-    public function __construct(private PlanService $planService) {}
+    public function __construct(
+        private PlanService $planService,
+        private PdfVariableExtractor $extractor,
+        private UserTemplatePdfProcessor $processor,
+    ) {}
 
     public function list(User $user): Collection
     {
@@ -43,13 +49,20 @@ class TemplateService
 
         Storage::disk('documents')->put($path, $file->getContent());
 
-        return Template::create([
+        $variables = $this->extractor->extract($path);
+
+        $template = Template::create([
             'tenant_id'   => $user->tenant_id,
             'user_id'     => $user->id,
             'name'        => $data['name'],
             'description' => $data['description'] ?? null,
             'file_path'   => $path,
+            'variables'   => !empty($variables) ? $variables : null,
         ]);
+
+        $template->variables_detected = count($variables);
+
+        return $template;
     }
 
     public function show(User $user, int $id): Template
@@ -72,6 +85,24 @@ class TemplateService
             'name'        => $data['name'],
             'description' => $data['description'] ?? null,
         ]);
+
+        return $template;
+    }
+
+    public function updateVariables(User $user, int $id, array $variables): Template
+    {
+        $template = $this->findForTenant($user, $id);
+
+        abort_if($template->tenant_id === null, 403, 'System templates cannot be modified.');
+
+        $keys = array_column($variables, 'key');
+        if (count($keys) !== count(array_unique($keys))) {
+            throw ValidationException::withMessages([
+                'variables' => ['Las claves de las variables deben ser únicas.'],
+            ]);
+        }
+
+        $template->update(['variables' => !empty($variables) ? $variables : null]);
 
         return $template;
     }
@@ -125,7 +156,16 @@ class TemplateService
                 Storage::disk('documents')->copy($template->file_path, $newPath);
             }
         } else {
-            Storage::disk('documents')->copy($template->file_path, $newPath);
+            if (!empty($template->variables) && !empty($data['values'] ?? [])) {
+                $pdfBytes = $this->processor->process(
+                    $template->file_path,
+                    $template->variables,
+                    $data['values']
+                );
+                Storage::disk('documents')->put($newPath, $pdfBytes);
+            } else {
+                Storage::disk('documents')->copy($template->file_path, $newPath);
+            }
         }
 
         $document = Document::create([

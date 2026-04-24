@@ -11,6 +11,7 @@ import {
 import Layout from '../components/Layout';
 import UploadTemplateModal from '../components/UploadTemplateModal';
 import UseTemplateModal from '../components/UseTemplateModal';
+import VariablesEditorModal from '../components/VariablesEditorModal';
 import ConfirmModal from '../components/ConfirmModal';
 import { getTemplates, deleteTemplate } from '../api/templates';
 import { useToast } from '../context/ToastContext';
@@ -25,17 +26,22 @@ function TemplateBadge({ isSystem }) {
     );
 }
 
-function VariablesBadge({ hasVariables }) {
-    if (!hasVariables) return null;
-    return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+function VariablesBadge({ template }) {
+    const count = template.variables?.length ?? 0;
+    if (template.is_system) return null;
+    return count > 0 ? (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
             <PencilSquareIcon className="w-3 h-3" />
-            Rellenable
+            {count} variable{count !== 1 ? 's' : ''}
+        </span>
+    ) : (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+            Sin variables
         </span>
     );
 }
 
-function TemplateCard({ template, onUse, onDelete }) {
+function TemplateCard({ template, onUse, onDelete, onEditVariables }) {
     return (
         <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow">
             <div className="flex items-start gap-3">
@@ -46,7 +52,7 @@ function TemplateCard({ template, onUse, onDelete }) {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                         <h3 className="text-sm font-semibold text-gray-900 truncate">{template.name}</h3>
                         <TemplateBadge isSystem={template.is_system} />
-                        <VariablesBadge hasVariables={template.has_variables} />
+                        <VariablesBadge template={template} />
                     </div>
                     {template.description && (
                         <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{template.description}</p>
@@ -78,13 +84,22 @@ function TemplateCard({ template, onUse, onDelete }) {
                     </a>
                 )}
                 {!template.is_system && (
-                    <button
-                        onClick={() => onDelete(template)}
-                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Eliminar plantilla"
-                    >
-                        <TrashIcon className="w-4 h-4" />
-                    </button>
+                    <>
+                        <button
+                            onClick={() => onEditVariables(template)}
+                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Editar variables"
+                        >
+                            <PencilSquareIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => onDelete(template)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar plantilla"
+                        >
+                            <TrashIcon className="w-4 h-4" />
+                        </button>
+                    </>
                 )}
             </div>
         </div>
@@ -93,9 +108,10 @@ function TemplateCard({ template, onUse, onDelete }) {
 
 export default function Templates() {
     const queryClient = useQueryClient();
-    const [showUpload, setShowUpload]     = useState(false);
-    const [useModal, setUseModal]         = useState(null);
-    const [deleteTarget, setDeleteTarget] = useState(null); // template object | null
+    const [showUpload, setShowUpload]           = useState(false);
+    const [useModal, setUseModal]               = useState(null);
+    const [deleteTarget, setDeleteTarget]       = useState(null);
+    const [editVarsTemplate, setEditVarsTemplate] = useState(null);
     const toast = useToast();
 
     const { data, isLoading } = useQuery({
@@ -169,6 +185,7 @@ export default function Templates() {
                                         template={t}
                                         onUse={setUseModal}
                                         onDelete={handleDelete}
+                                        onEditVariables={setEditVarsTemplate}
                                     />
                                 ))}
                             </div>
@@ -186,6 +203,7 @@ export default function Templates() {
                                     template={t}
                                     onUse={setUseModal}
                                     onDelete={handleDelete}
+                                    onEditVariables={setEditVarsTemplate}
                                 />
                             ))}
                         </div>
@@ -193,8 +211,20 @@ export default function Templates() {
                 </>
             )}
 
-            {showUpload && <UploadTemplateModal onClose={() => setShowUpload(false)} />}
+            {showUpload && (
+                <UploadTemplateModal
+                    onClose={() => setShowUpload(false)}
+                    onUploaded={(tpl) => setEditVarsTemplate(tpl)}
+                />
+            )}
             {useModal && <UseTemplateModal template={useModal} onClose={() => setUseModal(null)} />}
+            {editVarsTemplate && (
+                <VariablesEditorModal
+                    template={editVarsTemplate}
+                    onClose={() => setEditVarsTemplate(null)}
+                    onSaved={() => setEditVarsTemplate(null)}
+                />
+            )}
             <ConfirmModal
                 open={!!deleteTarget}
                 title="Eliminar plantilla"

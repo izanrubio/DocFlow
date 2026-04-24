@@ -23,8 +23,12 @@ class TemplateResource extends JsonResource
                 isset($this->resource->preview_url),
                 $this->resource->preview_url ?? null
             ),
-            'variables'     => $this->resource->variables ?? [],
-            'has_variables' => !empty($this->resource->variables),
+            'variables'          => $this->resource->variables ?? [],
+            'has_variables'      => !empty($this->resource->variables),
+            'variables_detected' => $this->when(
+                isset($this->resource->variables_detected),
+                $this->resource->variables_detected ?? 0
+            ),
         ];
     }
 }

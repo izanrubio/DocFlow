@@ -37,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('templates/{id}', [TemplateController::class, 'show']);
     Route::put('templates/{id}', [TemplateController::class, 'update']);
     Route::delete('templates/{id}', [TemplateController::class, 'destroy']);
+    Route::put('templates/{id}/variables', [TemplateController::class, 'variables']);
     Route::post('templates/{id}/use', [TemplateController::class, 'use']);
 });
 
