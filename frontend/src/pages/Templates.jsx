@@ -11,7 +11,9 @@ import {
 import Layout from '../components/Layout';
 import UploadTemplateModal from '../components/UploadTemplateModal';
 import UseTemplateModal from '../components/UseTemplateModal';
+import ConfirmModal from '../components/ConfirmModal';
 import { getTemplates, deleteTemplate } from '../api/templates';
+import { useToast } from '../context/ToastContext';
 
 function TemplateBadge({ isSystem }) {
     if (!isSystem) return null;
@@ -91,8 +93,10 @@ function TemplateCard({ template, onUse, onDelete }) {
 
 export default function Templates() {
     const queryClient = useQueryClient();
-    const [showUpload, setShowUpload] = useState(false);
-    const [useModal, setUseModal]     = useState(null);
+    const [showUpload, setShowUpload]     = useState(false);
+    const [useModal, setUseModal]         = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null); // template object | null
+    const toast = useToast();
 
     const { data, isLoading } = useQuery({
         queryKey: ['templates'],
@@ -101,14 +105,14 @@ export default function Templates() {
 
     const deleteMutation = useMutation({
         mutationFn: (id) => deleteTemplate(id),
-        onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['templates'] }),
+        onSuccess:  () => {
+            queryClient.invalidateQueries({ queryKey: ['templates'] });
+            toast.success('Plantilla eliminada correctamente.');
+        },
+        onError: () => toast.error('No se pudo eliminar la plantilla.'),
     });
 
-    const handleDelete = (template) => {
-        if (window.confirm(`¿Eliminar la plantilla «${template.name}»?`)) {
-            deleteMutation.mutate(template.id);
-        }
-    };
+    const handleDelete = (template) => setDeleteTarget(template);
 
     const myTemplates     = data?.filter((t) => !t.is_system) ?? [];
     const systemTemplates = data?.filter((t) => t.is_system) ?? [];
@@ -191,6 +195,15 @@ export default function Templates() {
 
             {showUpload && <UploadTemplateModal onClose={() => setShowUpload(false)} />}
             {useModal && <UseTemplateModal template={useModal} onClose={() => setUseModal(null)} />}
+            <ConfirmModal
+                open={!!deleteTarget}
+                title="Eliminar plantilla"
+                message={deleteTarget ? `¿Eliminar la plantilla «${deleteTarget.name}»? Esta acción no se puede deshacer.` : ''}
+                confirmLabel="Eliminar"
+                loading={deleteMutation.isPending}
+                onConfirm={() => { const id = deleteTarget.id; setDeleteTarget(null); deleteMutation.mutate(id); }}
+                onCancel={() => setDeleteTarget(null)}
+            />
         </Layout>
     );
 }

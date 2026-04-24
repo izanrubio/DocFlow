@@ -22,8 +22,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Layout from '../components/Layout';
+import ConfirmModal from '../components/ConfirmModal';
 import { getDocument, deleteDocument, addSigner, removeSigner, sendDocument, downloadDocument } from '../api/documents';
 import { useBillingUsage } from '../hooks/useBillingUsage';
+import { useToast } from '../context/ToastContext';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -128,6 +130,8 @@ export default function DocumentDetail() {
     const [showAddForm, setShowAddForm] = useState(false);
     const [signerForm, setSignerForm]   = useState(EMPTY_SIGNER);
     const [signerErrors, setSignerErrors] = useState({});
+    const [confirmModal, setConfirmModal] = useState(null); // null | 'delete' | 'send'
+    const toast = useToast();
 
     const { data: billing } = useBillingUsage();
 
@@ -146,8 +150,10 @@ export default function DocumentDetail() {
         mutationFn: () => deleteDocument(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['documents'] });
+            toast.success('Documento eliminado correctamente.');
             navigate('/dashboard');
         },
+        onError: () => toast.error('No se pudo eliminar el documento.'),
     });
 
     const addSignerMutation = useMutation({
@@ -181,17 +187,8 @@ export default function DocumentDetail() {
         setPageNumber(1);
     }, []);
 
-    const handleDelete = () => {
-        if (window.confirm('¿Eliminar este documento? Esta acción no se puede deshacer.')) {
-            deleteMutation.mutate();
-        }
-    };
-
-    const handleSend = () => {
-        if (window.confirm('¿Estás seguro? Una vez enviado no podrás modificar los firmantes.')) {
-            sendMutation.mutate();
-        }
-    };
+    const handleDelete = () => setConfirmModal('delete');
+    const handleSend   = () => setConfirmModal('send');
 
     const handleAddSigner = (e) => {
         e.preventDefault();
@@ -513,6 +510,26 @@ export default function DocumentDetail() {
                     )}
                 </div>
             </div>
+
+        <ConfirmModal
+            open={confirmModal === 'delete'}
+            title="Eliminar documento"
+            message="Esta acción no se puede deshacer. El documento y todos sus datos serán eliminados permanentemente."
+            confirmLabel="Eliminar"
+            loading={deleteMutation.isPending}
+            onConfirm={() => { setConfirmModal(null); deleteMutation.mutate(); }}
+            onCancel={() => setConfirmModal(null)}
+        />
+        <ConfirmModal
+            open={confirmModal === 'send'}
+            title="Enviar para firma"
+            message="Una vez enviado no podrás modificar los firmantes. Los firmantes recibirán un email con el enlace para firmar."
+            confirmLabel="Enviar"
+            confirmClass="bg-indigo-600 text-white hover:bg-indigo-700"
+            loading={sendMutation.isPending}
+            onConfirm={() => { setConfirmModal(null); sendMutation.mutate(); }}
+            onCancel={() => setConfirmModal(null)}
+        />
         </Layout>
     );
 }
