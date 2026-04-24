@@ -189,9 +189,6 @@ export default function UseTemplateModal({ template, onClose }) {
                                 {errors.expires_at && <p className="mt-1 text-xs text-red-600">{errors.expires_at[0]}</p>}
                             </div>
 
-                            {generalError && (
-                                <p className="text-sm text-red-600">{generalError}</p>
-                            )}
                         </form>
                     )}
 
