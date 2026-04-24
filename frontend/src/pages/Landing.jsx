@@ -191,9 +191,9 @@ function Hero() {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.08),transparent_60%)]" />
 
             <div className="relative max-w-6xl mx-auto px-5">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center text-center lg:text-left">
                     <div>
-                        <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-indigo-100">
+                        <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-indigo-100 mx-auto lg:mx-0">
                             <CheckCircleSolid className="w-3.5 h-3.5" />
                             Sin tarjeta de crédito · Gratis para siempre
                         </div>
@@ -208,7 +208,7 @@ function Hero() {
                             DocFlow es la forma más sencilla de enviar, firmar y gestionar contratos para autónomos y pymes españolas.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                             <Link
                                 to="/register"
                                 className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-indigo-300 text-sm"
@@ -224,14 +224,14 @@ function Hero() {
                             </a>
                         </div>
 
-                        <div className="mt-8 flex items-center gap-4 text-sm text-gray-400">
+                        <div className="mt-8 flex items-center gap-4 text-sm text-gray-400 justify-center lg:justify-start">
                             <span className="flex items-center gap-1.5"><CheckIcon className="w-4 h-4 text-green-500" /> Sin instalación</span>
                             <span className="flex items-center gap-1.5"><CheckIcon className="w-4 h-4 text-green-500" /> GDPR compliant</span>
                             <span className="flex items-center gap-1.5"><CheckIcon className="w-4 h-4 text-green-500" /> Validez legal UE</span>
                         </div>
                     </div>
 
-                    <div className="flex justify-center lg:justify-end pr-12">
+                    <div className="hidden lg:flex justify-end pr-12">
                         <AppMockup />
                     </div>
                 </div>
@@ -567,7 +567,6 @@ function Footer() {
 
                     <div className="text-sm text-center md:text-right">
                         <p>© 2026 DocFlow. Todos los derechos reservados.</p>
-                        <p className="mt-1">Hecho con ❤️ en España</p>
                     </div>
                 </div>
             </div>
