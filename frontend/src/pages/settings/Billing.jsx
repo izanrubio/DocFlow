@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Layout from '../../components/Layout';
 import { useBillingUsage } from '../../hooks/useBillingUsage';
-import { createCheckout, createPortal } from '../../api/billing';
+import { createCheckout, createPortal, devSetPlan } from '../../api/billing';
 
 const PLAN_LABELS = { free: 'Gratuito', pro: 'Profesional', business: 'Business' };
 const PLAN_PRICES = { free: '0€', pro: '19€', business: '49€' };
@@ -69,9 +69,14 @@ const UPGRADE_PLANS = [
 ];
 
 export default function Billing() {
-    const { data, isLoading } = useBillingUsage();
+    const { data, isLoading, refetch } = useBillingUsage();
     const [upgradeModal, setUpgradeModal] = useState(false);
     const [portalError, setPortalError]   = useState(null);
+
+    const devPlanMutation = useMutation({
+        mutationFn: (plan) => devSetPlan(plan),
+        onSuccess:  () => refetch(),
+    });
 
     const checkoutMutation = useMutation({
         mutationFn: (plan) => createCheckout(plan).then((r) => r.data.data.checkout_url),
@@ -192,6 +197,24 @@ export default function Billing() {
                         </div>
                     )}
                 </div>
+
+                {import.meta.env.DEV && (
+                    <div className="mt-4 bg-gray-900 rounded-xl border border-gray-700 p-4">
+                        <p className="text-xs font-mono font-semibold text-gray-400 mb-3">[DEV] Cambiar plan:</p>
+                        <div className="flex gap-2 flex-wrap">
+                            {['free', 'pro', 'business'].map((p) => (
+                                <button
+                                    key={p}
+                                    onClick={() => devPlanMutation.mutate(p)}
+                                    disabled={devPlanMutation.isPending || plan === p}
+                                    className="px-3 py-1.5 text-xs font-mono font-medium rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed capitalize transition-colors"
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {upgradeModal && (

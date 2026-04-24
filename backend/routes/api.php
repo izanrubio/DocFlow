@@ -62,4 +62,10 @@ if (app()->environment('local')) {
         Artisan::call('documents:expire');
         return response()->json(['data' => ['output' => Artisan::output()], 'message' => 'OK', 'status' => 200]);
     });
+
+    Route::middleware('auth:sanctum')->post('dev/set-plan/{plan}', function (string $plan, \Illuminate\Http\Request $request) {
+        abort_unless(in_array($plan, ['free', 'pro', 'business']), 422, 'Plan inválido.');
+        $request->user()->tenant->update(['plan' => $plan]);
+        return response()->json(['data' => ['plan' => $plan], 'message' => 'Plan actualizado.', 'status' => 200]);
+    });
 }
