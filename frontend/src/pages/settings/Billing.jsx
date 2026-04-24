@@ -96,10 +96,12 @@ export default function Billing() {
     if (isLoading) {
         return (
             <Layout>
-                <div className="max-w-xl space-y-4">
-                    {[...Array(2)].map((_, i) => (
-                        <div key={i} className="h-44 bg-gray-100 rounded-2xl animate-pulse" />
-                    ))}
+                <div className="max-w-4xl mx-auto space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[...Array(2)].map((_, i) => (
+                            <div key={i} className="h-52 bg-gray-100 rounded-2xl animate-pulse" />
+                        ))}
+                    </div>
                 </div>
             </Layout>
         );
@@ -123,7 +125,7 @@ export default function Billing() {
 
     return (
         <Layout>
-            <div className="max-w-xl">
+            <div className="max-w-4xl mx-auto px-1">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-8">
                     <Link to="/dashboard" className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -132,9 +134,12 @@ export default function Billing() {
                     <h1 className="text-2xl font-bold text-gray-900">Facturación</h1>
                 </div>
 
+                {/* ── Dos columnas en desktop ──────────────────────── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
+
                 {/* ── Plan actual ─────────────────────────────────── */}
                 <div
-                    className="rounded-2xl p-6 mb-5 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_-4px_rgba(0,0,0,0.1)]"
+                    className="rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_-4px_rgba(0,0,0,0.1)]"
                     style={{ background: 'linear-gradient(135deg, #f0f0ff 0%, #ffffff 60%)' }}
                 >
                     <div className="flex items-start justify-between gap-4 mb-5">
@@ -202,7 +207,7 @@ export default function Billing() {
                 </div>
 
                 {/* ── Uso este mes ────────────────────────────────── */}
-                <div className="bg-white rounded-2xl p-6 mb-5 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_-4px_rgba(0,0,0,0.08)]">
+                <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_-4px_rgba(0,0,0,0.08)]">
                     <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-5">
                         Uso este mes
                     </p>
@@ -236,6 +241,8 @@ export default function Billing() {
                         </div>
                     )}
                 </div>
+
+                </div>{/* end grid */}
 
                 {/* ── [DEV] panel ─────────────────────────────────── */}
                 {import.meta.env.DEV && (
