@@ -88,6 +88,8 @@ class TemplateService
 
     public function use(User $user, int $id, array $data): Document
     {
+        $this->planService->assertCanCreateDocument($user->tenant);
+
         $template = $this->findForTenant($user, $id);
 
         $newPath = sprintf(

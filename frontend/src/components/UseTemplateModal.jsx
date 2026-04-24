@@ -108,6 +108,10 @@ export default function UseTemplateModal({ template, onClose }) {
         },
     });
 
+    const generalError = mutation.isError && !Object.keys(errors).length
+        ? (mutation.error?.response?.data?.message ?? 'Error al crear el documento.')
+        : null;
+
     const handleStep1Next = (e) => {
         e.preventDefault();
         if (!title.trim()) { setErrors({ title: ['El título es obligatorio.'] }); return; }
@@ -182,6 +186,10 @@ export default function UseTemplateModal({ template, onClose }) {
                                 />
                                 {errors.expires_at && <p className="mt-1 text-xs text-red-600">{errors.expires_at[0]}</p>}
                             </div>
+
+                            {generalError && (
+                                <p className="text-sm text-red-600">{generalError}</p>
+                            )}
                         </form>
                     )}
 
@@ -213,10 +221,8 @@ export default function UseTemplateModal({ template, onClose }) {
                                 </div>
                             ))}
 
-                            {mutation.isError && !Object.keys(errors).length && (
-                                <p className="text-sm text-red-600">
-                                    {mutation.error?.response?.data?.message ?? 'Error al crear el documento.'}
-                                </p>
+                            {generalError && (
+                                <p className="text-sm text-red-600">{generalError}</p>
                             )}
                         </form>
                     )}
