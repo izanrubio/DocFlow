@@ -1,11 +1,12 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { HomeIcon, DocumentTextIcon, RectangleStackIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, RectangleStackIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 import * as authApi from '../api/auth';
 
 const NAV = [
-    { label: 'Dashboard',   href: '/dashboard',  Icon: HomeIcon,              match: (p) => p === '/dashboard' || p.startsWith('/documents') },
-    { label: 'Plantillas',  href: '/templates',  Icon: RectangleStackIcon,    match: (p) => p === '/templates' },
+    { label: 'Dashboard',   href: '/dashboard',        Icon: HomeIcon,           match: (p) => p === '/dashboard' || p.startsWith('/documents') },
+    { label: 'Plantillas',  href: '/templates',        Icon: RectangleStackIcon, match: (p) => p === '/templates' },
+    { label: 'Facturación', href: '/settings/billing', Icon: CreditCardIcon,     match: (p) => p.startsWith('/settings') },
 ];
 
 export default function Layout({ children }) {

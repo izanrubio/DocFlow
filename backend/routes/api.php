@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\SignerController;
 use App\Http\Controllers\SigningController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +39,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('templates/{id}', [TemplateController::class, 'destroy']);
     Route::post('templates/{id}/use', [TemplateController::class, 'use']);
 });
+
+Route::middleware('auth:sanctum')->prefix('billing')->group(function () {
+    Route::get('plans',              [BillingController::class, 'plans']);
+    Route::get('usage',              [BillingController::class, 'usage']);
+    Route::post('checkout/{plan}',   [BillingController::class, 'checkout']);
+    Route::post('portal',            [BillingController::class, 'portal']);
+    Route::get('subscription',       [BillingController::class, 'subscription']);
+});
+
+Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
 
 Route::get('sign/{token}', [SigningController::class, 'show']);
 Route::post('sign/{token}', [SigningController::class, 'sign']);

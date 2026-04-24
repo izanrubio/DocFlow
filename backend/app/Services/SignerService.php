@@ -9,14 +9,19 @@ use App\Jobs\SendSignatureRequestJob;
 use App\Models\Document;
 use App\Models\Signer;
 use App\Models\User;
+use App\Services\PlanService;
 
 class SignerService
 {
+    public function __construct(private PlanService $planService) {}
+
     public function add(User $user, int $documentId, array $data): Signer
     {
         $document = Document::forTenant($user->tenant_id)->findOrFail($documentId);
 
         abort_if($document->status !== DocumentStatus::Draft, 422, 'Signers can only be added to draft documents.');
+
+        $this->planService->assertCanAddSigner($user->tenant, $document);
 
         abort_if(
             $document->signers()->where('email', $data['email'])->exists(),

@@ -7,6 +7,7 @@ use App\Enums\DocumentStatus;
 use App\Models\Document;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\PlanService;
 use App\Services\Templates\TemplateGeneratorFactory;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -16,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class TemplateService
 {
+    public function __construct(private PlanService $planService) {}
+
     public function list(User $user): Collection
     {
         return Template::where(function ($q) use ($user) {
@@ -34,6 +37,8 @@ class TemplateService
 
     public function store(User $user, array $data, UploadedFile $file): Template
     {
+        $this->planService->assertCanCreateTemplate($user->tenant);
+
         $path = sprintf('%d/templates/%s.pdf', $user->tenant_id, Str::uuid());
 
         Storage::disk('documents')->put($path, $file->getContent());

@@ -8,11 +8,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tenant extends Model
 {
-    protected $fillable = ['name', 'slug', 'plan', 'trial_ends_at'];
+    protected $fillable = [
+        'name', 'slug', 'plan', 'trial_ends_at',
+        'stripe_customer_id', 'stripe_subscription_id',
+        'subscription_status', 'current_period_end',
+    ];
 
     protected $casts = [
-        'plan' => TenantPlan::class,
-        'trial_ends_at' => 'datetime',
+        'plan'               => TenantPlan::class,
+        'trial_ends_at'      => 'datetime',
+        'current_period_end' => 'datetime',
     ];
 
     public function users(): HasMany

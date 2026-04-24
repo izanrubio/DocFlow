@@ -23,6 +23,7 @@ import {
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Layout from '../components/Layout';
 import { getDocument, deleteDocument, addSigner, removeSigner, sendDocument, downloadDocument } from '../api/documents';
+import { useBillingUsage } from '../hooks/useBillingUsage';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -128,6 +129,8 @@ export default function DocumentDetail() {
     const [signerForm, setSignerForm]   = useState(EMPTY_SIGNER);
     const [signerErrors, setSignerErrors] = useState({});
 
+    const { data: billing } = useBillingUsage();
+
     const { data, isLoading, isError } = useQuery({
         queryKey: ['document', id],
         queryFn:  () => getDocument(id).then((r) => r.data.data),
@@ -221,6 +224,9 @@ export default function DocumentDetail() {
     const isCompleted = doc.status === 'completed';
     const isExpired   = doc.status === 'expired';
     const hasSigner   = doc.signers && doc.signers.length > 0;
+
+    const signerLimit   = billing?.limits?.signers_per_document ?? -1;
+    const signerAtLimit = signerLimit !== -1 && (doc.signers?.length ?? 0) >= signerLimit;
 
     const expiryColor = () => {
         if (!doc.expires_at || isExpired) return null;
@@ -357,7 +363,9 @@ export default function DocumentDetail() {
                             {isDraft && !showAddForm && (
                                 <button
                                     onClick={() => { setShowAddForm(true); setSignerForm({ ...EMPTY_SIGNER, order: (doc.signers?.length ?? 0) + 1 }); }}
-                                    className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                                    disabled={signerAtLimit}
+                                    title={signerAtLimit ? `Límite de ${signerLimit} firmantes alcanzado` : undefined}
+                                    className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     <UserPlusIcon className="w-3.5 h-3.5" /> Añadir
                                 </button>

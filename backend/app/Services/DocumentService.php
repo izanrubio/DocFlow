@@ -7,6 +7,7 @@ use App\Enums\DocumentStatus;
 use App\Enums\SignerStatus;
 use App\Models\Document;
 use App\Models\User;
+use App\Services\PlanService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +15,8 @@ use Illuminate\Support\Str;
 
 class DocumentService
 {
+    public function __construct(private PlanService $planService) {}
+
     public function list(User $user, array $filters): LengthAwarePaginator
     {
         $query = Document::forTenant($user->tenant_id)
@@ -33,6 +36,8 @@ class DocumentService
 
     public function store(User $user, array $data, UploadedFile $file): Document
     {
+        $this->planService->assertCanCreateDocument($user->tenant);
+
         $path = sprintf(
             '%d/%s/%s/%s.pdf',
             $user->tenant_id,

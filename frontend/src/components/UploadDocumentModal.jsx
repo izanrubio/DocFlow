@@ -1,13 +1,20 @@
 import { useRef, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { XMarkIcon, DocumentArrowUpIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, DocumentArrowUpIcon, ArrowUpTrayIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { uploadDocument } from '../api/documents';
+import { useBillingUsage } from '../hooks/useBillingUsage';
 
 const MAX_SIZE = 20 * 1024 * 1024;
 
 export default function UploadDocumentModal({ onClose }) {
     const queryClient = useQueryClient();
     const fileInputRef = useRef(null);
+    const { data: billing } = useBillingUsage();
+
+    const docsUsed  = billing?.usage?.documents_this_month ?? 0;
+    const docsLimit = billing?.usage?.documents_limit ?? billing?.limits?.documents_per_month ?? -1;
+    const atLimit   = docsLimit !== -1 && docsUsed >= docsLimit;
 
     const [title, setTitle]         = useState('');
     const [file, setFile]           = useState(null);
@@ -77,6 +84,19 @@ export default function UploadDocumentModal({ onClose }) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    {atLimit && (
+                        <div className="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-yellow-800">
+                                    Has alcanzado el límite de {docsLimit} documentos este mes.
+                                </p>
+                                <Link to="/settings/billing" onClick={onClose} className="text-sm text-yellow-700 underline hover:text-yellow-900">
+                                    Ver planes
+                                </Link>
+                            </div>
+                        </div>
+                    )}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Título
@@ -191,7 +211,7 @@ export default function UploadDocumentModal({ onClose }) {
                         </button>
                         <button
                             type="submit"
-                            disabled={mutation.isPending || !file}
+                            disabled={mutation.isPending || !file || atLimit}
                             className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                         >
                             {mutation.isPending ? 'Subiendo…' : 'Subir documento'}

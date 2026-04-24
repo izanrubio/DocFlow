@@ -117,6 +117,11 @@ export default function Register() {
             Inicia sesión
           </Link>
         </p>
+        <p className="mt-2 text-center">
+          <Link to="/pricing" className="text-xs text-gray-400 hover:text-gray-600">
+            Ver planes y precios
+          </Link>
+        </p>
       </div>
     </div>
   );
