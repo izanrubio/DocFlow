@@ -151,7 +151,7 @@ export default function DocumentDetail() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['documents'] });
             toast.success('Documento eliminado correctamente.');
-            navigate('/dashboard');
+            navigate('/documents');
         },
         onError: () => toast.error('No se pudo eliminar el documento.'),
     });
@@ -243,7 +243,7 @@ export default function DocumentDetail() {
             )}
 
             <div className="flex items-center gap-3 mb-6">
-                <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => navigate('/documents')} className="text-gray-400 hover:text-gray-600">
                     <ArrowLeftIcon className="w-5 h-5" />
                 </button>
                 <h1 className="text-xl font-bold text-gray-900 truncate">{doc.title}</h1>
