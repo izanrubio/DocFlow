@@ -13,6 +13,7 @@ import Templates from './pages/Templates';
 import SignDocument from './pages/SignDocument';
 import Pricing from './pages/Pricing';
 import Billing from './pages/settings/Billing';
+import Landing from './pages/Landing';
 
 const queryClient = new QueryClient();
 
@@ -29,7 +30,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/sign/:token" element={<SignDocument />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/settings/billing" element={<PrivateRoute><Billing /></PrivateRoute>} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Landing />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
