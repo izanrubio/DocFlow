@@ -7,3 +7,4 @@ const publicApi = axios.create({
 
 export const getSignRequest  = (token) => publicApi.get(`/sign/${token}`);
 export const signDocument    = (token, signatureData) => publicApi.post(`/sign/${token}`, { signature_data: signatureData });
+export const rejectDocument  = (token, reason) => publicApi.post(`/sign/${token}/reject`, { reason });

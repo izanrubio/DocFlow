@@ -6,6 +6,7 @@ use App\Enums\DocumentEventType;
 use App\Enums\DocumentStatus;
 use App\Enums\SignerStatus;
 use App\Jobs\SealDocumentJob;
+use App\Jobs\SendRejectionNotificationJob;
 use App\Jobs\SendSignatureRequestJob;
 use App\Models\Signature;
 use App\Models\Signer;
@@ -33,8 +34,25 @@ class SigningController extends Controller
             ], 'Already signed');
         }
 
-        if (in_array($document->status, [DocumentStatus::Expired, DocumentStatus::Cancelled])) {
-            return $this->error('El documento ha expirado o fue cancelado.', 403);
+        if ($document->status === DocumentStatus::Expired) {
+            return $this->error('El documento ha caducado.', 403);
+        }
+
+        if ($document->status === DocumentStatus::Cancelled) {
+            $rejectionEvent = $document->events()
+                ->where('type', DocumentEventType::Rejected->value)
+                ->latest()
+                ->first();
+
+            if ($rejectionEvent) {
+                return $this->error('Este documento fue rechazado.', 403, [
+                    'rejected'    => true,
+                    'rejected_by' => $rejectionEvent->metadata['signer_name'] ?? null,
+                    'reason'      => $rejectionEvent->metadata['reason'] ?? null,
+                ]);
+            }
+
+            return $this->error('El documento ha sido cancelado.', 403);
         }
 
         $previousUnsigned = $document->signers
@@ -105,7 +123,7 @@ class SigningController extends Controller
         $document = $signer->document;
 
         if (in_array($document->status, [DocumentStatus::Expired, DocumentStatus::Cancelled])) {
-            return $this->error('El documento ha expirado o fue cancelado.', 403);
+            return $this->error('El documento ya no puede ser firmado.', 403);
         }
 
         $previousUnsigned = $document->signers
@@ -161,5 +179,52 @@ class SigningController extends Controller
             ['signed' => true, 'all_signed' => $allSigned],
             'Has firmado el documento correctamente'
         );
+    }
+
+    public function reject(Request $request, string $token): JsonResponse
+    {
+        $request->validate(['reason' => ['required', 'string', 'min:10', 'max:500']]);
+
+        $signer = Signer::where('token', $token)
+            ->with(['document.user'])
+            ->firstOrFail();
+
+        $document = $signer->document;
+
+        if ($signer->status === SignerStatus::Signed) {
+            return $this->error('Ya has firmado este documento, no puedes rechazarlo.', 422);
+        }
+
+        if ($signer->status === SignerStatus::Rejected) {
+            return $this->error('Ya has rechazado este documento.', 422);
+        }
+
+        if (in_array($document->status, [DocumentStatus::Expired, DocumentStatus::Cancelled])) {
+            return $this->error('Este documento no puede ser rechazado.', 403);
+        }
+
+        $signer->update(['status' => SignerStatus::Rejected]);
+
+        $document->events()->create([
+            'tenant_id' => $document->tenant_id,
+            'type'      => DocumentEventType::Rejected,
+            'signer_id' => $signer->id,
+            'metadata'  => [
+                'reason'       => $request->reason,
+                'signer_name'  => $signer->name,
+                'signer_email' => $signer->email,
+            ],
+        ]);
+
+        $document->update(['status' => DocumentStatus::Cancelled]);
+
+        $document->events()->create([
+            'tenant_id' => $document->tenant_id,
+            'type'      => DocumentEventType::Cancelled,
+        ]);
+
+        SendRejectionNotificationJob::dispatch($signer, $request->reason);
+
+        return $this->success(['rejected' => true], 'Has rechazado el documento.');
     }
 }

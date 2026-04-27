@@ -33,6 +33,8 @@ class DocumentResource extends JsonResource
             'events'            => $this->whenLoaded('events', fn () => $this->events->map(fn ($e) => [
                 'id'         => $e->id,
                 'type'       => $e->type->value,
+                'signer_id'  => $e->signer_id,
+                'metadata'   => $e->metadata,
                 'created_at' => $e->created_at->toIso8601String(),
             ])),
             'preview_url'       => $this->when($this->resource->preview_url !== null, $this->resource->preview_url),

@@ -12,4 +12,5 @@ enum DocumentEventType: string
     case Completed = 'completed';
     case Expired = 'expired';
     case ReminderSent = 'reminder_sent';
+    case Cancelled = 'cancelled';
 }

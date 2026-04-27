@@ -72,8 +72,9 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('billing
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
 
-Route::get('sign/{token}',  [SigningController::class, 'show'])->middleware('throttle:sign');
-Route::post('sign/{token}', [SigningController::class, 'sign'])->middleware('throttle:sign_submit');
+Route::get('sign/{token}',          [SigningController::class, 'show'])->middleware('throttle:sign');
+Route::post('sign/{token}',         [SigningController::class, 'sign'])->middleware('throttle:sign_submit');
+Route::post('sign/{token}/reject',  [SigningController::class, 'reject'])->middleware('throttle:sign_submit');
 
 if (app()->environment('local')) {
     Route::get('dev/trigger-reminders', function () {

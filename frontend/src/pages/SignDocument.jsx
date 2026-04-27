@@ -12,7 +12,7 @@ import {
     EyeIcon,
     XCircleIcon,
 } from '@heroicons/react/24/outline';
-import { getSignRequest, signDocument } from '../api/sign';
+import { getSignRequest, signDocument, rejectDocument } from '../api/sign';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -49,17 +49,40 @@ function Header() {
 export default function SignDocument() {
     const { token } = useParams();
 
-    const [numPages, setNumPages]         = useState(null);
-    const [pageNumber, setPageNumber]     = useState(1);
-    const [accepted, setAccepted]         = useState(false);
-    const [isSigned, setIsSigned]         = useState(false);
-    const [signResult, setSignResult]     = useState(null);
+    const [numPages, setNumPages]           = useState(null);
+    const [pageNumber, setPageNumber]       = useState(1);
+    const [accepted, setAccepted]           = useState(false);
+    const [isSigned, setIsSigned]           = useState(false);
+    const [signResult, setSignResult]       = useState(null);
+    const [rejectResult, setRejectResult]   = useState(null);
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [rejectReason, setRejectReason]   = useState('');
+    const [rejectPending, setRejectPending] = useState(false);
+    const [rejectError, setRejectError]     = useState('');
     const sigPad = useRef(null);
 
     const signMutation = useMutation({
         mutationFn: (signatureData) => signDocument(token, signatureData).then((r) => r.data.data),
         onSuccess: (result) => setSignResult(result),
     });
+
+    const handleConfirmReject = async () => {
+        if (rejectReason.trim().length < 10) {
+            setRejectError('El motivo debe tener al menos 10 caracteres.');
+            return;
+        }
+        setRejectError('');
+        setRejectPending(true);
+        try {
+            await rejectDocument(token, rejectReason.trim());
+            setShowRejectModal(false);
+            setRejectResult(true);
+        } catch (err) {
+            setRejectError(err.response?.data?.message ?? 'Error al rechazar el documento.');
+        } finally {
+            setRejectPending(false);
+        }
+    };
 
     const { data, isLoading, isError, error } = useQuery({
         queryKey: ['sign', token],
@@ -100,6 +123,23 @@ export default function SignDocument() {
         );
     }
 
+    if (rejectResult) {
+        return (
+            <div className="min-h-screen flex flex-col bg-gray-50">
+                <Header />
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center max-w-sm px-4">
+                        <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
+                            <XCircleIcon className="w-12 h-12 text-red-500" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3">Has rechazado el documento</h2>
+                        <p className="text-gray-500">El propietario del documento ha sido notificado.</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex flex-col bg-gray-50">
@@ -112,8 +152,36 @@ export default function SignDocument() {
     }
 
     if (isError) {
-        const msg     = error?.response?.data?.message ?? '';
-        const expired = msg.toLowerCase().includes('expir') || msg.toLowerCase().includes('caduc');
+        const msg        = error?.response?.data?.message ?? '';
+        const errData    = error?.response?.data?.data ?? {};
+        const expired    = msg.toLowerCase().includes('expir') || msg.toLowerCase().includes('caduc');
+        const wasRejected = errData?.rejected === true;
+
+        if (wasRejected) {
+            return (
+                <div className="min-h-screen flex flex-col bg-gray-50">
+                    <Header />
+                    <div className="flex-1 flex items-center justify-center">
+                        <div className="max-w-sm px-4 text-center">
+                            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                                <XCircleIcon className="w-10 h-10 text-red-500" />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900 mb-2">Este documento fue rechazado</h2>
+                            {errData.rejected_by && (
+                                <p className="text-gray-600 mb-2">
+                                    Rechazado por <strong>{errData.rejected_by}</strong>
+                                </p>
+                            )}
+                            {errData.reason && (
+                                <p className="text-sm text-gray-500 italic bg-gray-100 rounded-lg px-4 py-3 mt-2">
+                                    "{errData.reason}"
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
 
         if (expired) {
             return (
@@ -125,9 +193,6 @@ export default function SignDocument() {
                             <h2 className="text-xl font-bold text-gray-900 mb-2">Este documento ha caducado</h2>
                             <p className="text-gray-500">
                                 El plazo para firmar este documento ha finalizado.
-                                {data?.document?.sent_by && (
-                                    <> Contacta con <strong>{data.document.sent_by}</strong> si necesitas un nuevo documento.</>
-                                )}
                             </p>
                         </div>
                     </div>
@@ -169,6 +234,7 @@ export default function SignDocument() {
     const { signer, document: doc, signers, preview_url: previewUrl } = data;
 
     return (
+        <>
         <div className="h-screen flex flex-col bg-gray-50">
             <Header />
 
@@ -300,6 +366,13 @@ export default function SignDocument() {
                             {signMutation.isPending ? 'Firmando…' : 'Firmar documento'}
                         </button>
 
+                        <button
+                            onClick={() => { setRejectReason(''); setRejectError(''); setShowRejectModal(true); }}
+                            className="w-full py-2.5 px-4 text-red-600 font-medium rounded-xl border border-red-200 hover:bg-red-50 transition-colors text-sm"
+                        >
+                            Rechazar documento
+                        </button>
+
                         <p className="text-xs text-center text-gray-400">
                             No necesitas cuenta en DocFlow para firmar.
                         </p>
@@ -307,5 +380,47 @@ export default function SignDocument() {
                 </div>
             </div>
         </div>
+        {showRejectModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">¿Rechazar este documento?</h3>
+                    <p className="text-sm text-red-600 font-medium mb-4">
+                        Esta acción cancelará el documento para todos los firmantes. No se podrá deshacer.
+                    </p>
+
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Motivo del rechazo <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                        value={rejectReason}
+                        onChange={(e) => { setRejectReason(e.target.value); setRejectError(''); }}
+                        rows={4}
+                        placeholder="Explica por qué rechazas este documento (mínimo 10 caracteres)..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-1"
+                    />
+                    <p className="text-xs text-gray-400 mb-2">{rejectReason.length}/500</p>
+
+                    {rejectError && <p className="text-xs text-red-600 mb-3">{rejectError}</p>}
+
+                    <div className="flex gap-3 mt-2">
+                        <button
+                            onClick={handleConfirmReject}
+                            disabled={rejectPending}
+                            className="flex-1 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-xl transition-colors"
+                        >
+                            {rejectPending ? 'Rechazando…' : 'Confirmar rechazo'}
+                        </button>
+                        <button
+                            onClick={() => setShowRejectModal(false)}
+                            disabled={rejectPending}
+                            className="flex-1 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 }

@@ -68,9 +68,10 @@ const EVENT_LABEL = {
     sent:          'Enviado a firmantes',
     viewed:        'Visualizado',
     signed:        'Firmado',
-    rejected:      'Rechazado',
+    rejected:      'Rechazado por firmante',
     completed:     'Completado',
     expired:       'Caducado',
+    cancelled:     'Documento cancelado',
     reminder_sent: 'Recordatorio enviado',
 };
 const EVENT_ICON = {
@@ -81,6 +82,7 @@ const EVENT_ICON = {
     rejected:      <XCircleIcon className="w-3.5 h-3.5 text-red-500" />,
     completed:     <CheckCircleSolid className="w-3.5 h-3.5 text-green-600" />,
     expired:       <ClockIcon className="w-3.5 h-3.5 text-red-500" />,
+    cancelled:     <XCircleIcon className="w-3.5 h-3.5 text-gray-400" />,
     reminder_sent: <BellIcon className="w-3.5 h-3.5 text-yellow-500" />,
 };
 
@@ -220,7 +222,15 @@ export default function DocumentDetail() {
     const isDraft     = doc.status === 'draft';
     const isCompleted = doc.status === 'completed';
     const isExpired   = doc.status === 'expired';
+    const isCancelled = doc.status === 'cancelled';
     const hasSigner   = doc.signers && doc.signers.length > 0;
+
+    const rejectionEvent = doc.events?.find((e) => e.type === 'rejected');
+    const rejectionByName  = rejectionEvent?.metadata?.signer_name;
+    const rejectionReason  = rejectionEvent?.metadata?.reason;
+
+    const getRejectionReasonForSigner = (signerId) =>
+        doc.events?.find((e) => e.type === 'rejected' && e.signer_id === signerId)?.metadata?.reason;
 
     const signerLimit   = billing?.limits?.signers_per_document ?? -1;
     const signerAtLimit = signerLimit !== -1 && (doc.signers?.length ?? 0) >= signerLimit;
@@ -288,6 +298,30 @@ export default function DocumentDetail() {
                             {' '}Crea un nuevo documento si necesitas continuar.
                         </p>
                     </div>
+                </div>
+            )}
+
+            {isCancelled && rejectionEvent && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-xl px-5 py-4">
+                    <div className="flex items-center gap-3 mb-2">
+                        <XCircleIcon className="w-6 h-6 text-red-500 shrink-0" />
+                        <p className="text-sm font-semibold text-red-800">
+                            Este documento fue rechazado{rejectionByName ? ` por ${rejectionByName}` : ''}
+                        </p>
+                    </div>
+                    {rejectionReason && (
+                        <p className="text-sm text-red-700 italic ml-9 bg-red-100/60 rounded-lg px-3 py-2">
+                            "{rejectionReason}"
+                        </p>
+                    )}
+                    <p className="text-xs text-red-500 ml-9 mt-2">Crea un nuevo documento si necesitas continuar.</p>
+                </div>
+            )}
+
+            {isCancelled && !rejectionEvent && (
+                <div className="mb-6 flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-5 py-4">
+                    <XCircleIcon className="w-6 h-6 text-gray-400 shrink-0" />
+                    <p className="text-sm text-gray-600">Este documento ha sido cancelado.</p>
                 </div>
             )}
 
@@ -383,10 +417,20 @@ export default function DocumentDetail() {
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-gray-800 truncate">{signer.name}</p>
                                             <p className="text-xs text-gray-400 truncate">{signer.email}</p>
-                                            <span className={`inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-xs font-medium ${SIGNER_BADGE[signer.status]}`}>
+                                            <span
+                                                className={`inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-xs font-medium ${SIGNER_BADGE[signer.status]}`}
+                                                title={signer.status === 'rejected' && getRejectionReasonForSigner(signer.id)
+                                                    ? `Motivo: ${getRejectionReasonForSigner(signer.id)}`
+                                                    : undefined}
+                                            >
                                                 {SIGNER_ICON[signer.status]}
                                                 {SIGNER_LABEL[signer.status]}
                                             </span>
+                                            {signer.status === 'rejected' && getRejectionReasonForSigner(signer.id) && (
+                                                <p className="text-xs text-red-500 mt-1 italic">
+                                                    "{getRejectionReasonForSigner(signer.id)}"
+                                                </p>
+                                            )}
                                         </div>
                                         {isDraft && (
                                             <button
@@ -499,8 +543,16 @@ export default function DocumentDetail() {
                                         <span className="mt-0.5 shrink-0">
                                             {EVENT_ICON[ev.type] ?? <div className="w-3.5 h-3.5 rounded-full bg-indigo-200 mt-0.5" />}
                                         </span>
-                                        <div>
-                                            <p className="text-sm text-gray-700">{EVENT_LABEL[ev.type] ?? ev.type}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-gray-700">
+                                                {EVENT_LABEL[ev.type] ?? ev.type}
+                                                {ev.type === 'rejected' && ev.metadata?.signer_name && (
+                                                    <span className="text-gray-400"> — {ev.metadata.signer_name}</span>
+                                                )}
+                                            </p>
+                                            {ev.type === 'rejected' && ev.metadata?.reason && (
+                                                <p className="text-xs text-red-500 italic mt-0.5">"{ev.metadata.reason}"</p>
+                                            )}
                                             <p className="text-xs text-gray-400">{new Date(ev.created_at).toLocaleString('es-ES')}</p>
                                         </div>
                                     </li>
