@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import ToastContainer from '../components/ToastContainer';
+import { setToastBridge } from '../utils/toastBridge';
 
 const ToastContext = createContext(null);
 
@@ -24,6 +25,11 @@ export function ToastProvider({ children }) {
         warning: (msg, dur) => add('warning', msg, dur),
         info:    (msg, dur) => add('info',    msg, dur),
     }), [add]);
+
+    useEffect(() => {
+        setToastBridge(toast);
+        return () => setToastBridge(null);
+    }, [toast]);
 
     return (
         <ToastContext.Provider value={toast}>

@@ -9,18 +9,22 @@ use App\Http\Controllers\SigningController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
-    Route::post('register', [AuthController::class, 'register']);
-    Route::post('login', [AuthController::class, 'login']);
+    Route::post('register', [AuthController::class, 'register'])
+        ->middleware('throttle:register');
+
+    Route::post('login', [AuthController::class, 'login'])
+        ->middleware('throttle:login');
 
     Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
         ->middleware('signed')
         ->name('verification.verify');
 
     Route::post('email/resend', [AuthController::class, 'resendVerification'])
-        ->middleware('throttle:3,10');
+        ->middleware('throttle:resend');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
@@ -28,7 +32,7 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->group(function () {
     Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 
     Route::get('documents', [DocumentController::class, 'index']);
@@ -51,7 +55,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('templates/{id}/use', [TemplateController::class, 'use']);
 });
 
-Route::middleware(['auth:sanctum', 'verified'])->prefix('billing')->group(function () {
+Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('billing')->group(function () {
     Route::get('plans',              [BillingController::class, 'plans']);
     Route::get('usage',              [BillingController::class, 'usage']);
     Route::post('checkout/{plan}',   [BillingController::class, 'checkout']);
@@ -61,8 +65,8 @@ Route::middleware(['auth:sanctum', 'verified'])->prefix('billing')->group(functi
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
 
-Route::get('sign/{token}', [SigningController::class, 'show']);
-Route::post('sign/{token}', [SigningController::class, 'sign']);
+Route::get('sign/{token}',  [SigningController::class, 'show'])->middleware('throttle:sign');
+Route::post('sign/{token}', [SigningController::class, 'sign'])->middleware('throttle:sign_submit');
 
 if (app()->environment('local')) {
     Route::get('dev/trigger-reminders', function () {
@@ -78,5 +82,32 @@ if (app()->environment('local')) {
         abort_unless(in_array($plan, ['free', 'pro', 'business']), 422, 'Plan inválido.');
         $request->user()->tenant->update(['plan' => $plan]);
         return response()->json(['data' => ['plan' => $plan], 'message' => 'Plan actualizado.', 'status' => 200]);
+    });
+
+    Route::get('dev/test-rate-limit', function () {
+        $key      = 'login:127.0.0.1';
+        $maxAttempts = 5;
+        RateLimiter::clear($key);
+
+        $results  = [];
+        $throttledAt = null;
+        for ($i = 1; $i <= 10; $i++) {
+            $throttled = RateLimiter::tooManyAttempts($key, $maxAttempts);
+            if ($throttled) {
+                $throttledAt ??= $i;
+                $results[] = ['attempt' => $i, 'throttled' => true, 'remaining' => 0];
+            } else {
+                RateLimiter::hit($key, 60);
+                $results[] = ['attempt' => $i, 'throttled' => false, 'remaining' => RateLimiter::remaining($key, $maxAttempts)];
+            }
+        }
+
+        RateLimiter::clear($key);
+
+        return response()->json([
+            'data'    => ['attempts' => $results, 'throttled_at_attempt' => $throttledAt],
+            'message' => "Límite activado en intento #{$throttledAt} (máx {$maxAttempts}/min).",
+            'status'  => 200,
+        ]);
     });
 }

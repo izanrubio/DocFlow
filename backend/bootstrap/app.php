@@ -65,11 +65,15 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (TooManyRequestsHttpException $e, Request $request) {
             if ($request->is('api/*')) {
+                $retryAfter = $e->getHeaders()['Retry-After'] ?? null;
+                $message    = 'Demasiadas peticiones. Por favor espera antes de volver a intentarlo.';
+                $headers    = $retryAfter ? ['Retry-After' => $retryAfter] : [];
                 return response()->json([
-                    'data'    => null,
-                    'message' => 'Demasiadas peticiones. Inténtalo más tarde.',
-                    'status'  => 429,
-                ], 429);
+                    'data'        => null,
+                    'message'     => $message,
+                    'status'      => 429,
+                    'retry_after' => $retryAfter ? (int) $retryAfter : null,
+                ], 429, $headers);
             }
         });
 
