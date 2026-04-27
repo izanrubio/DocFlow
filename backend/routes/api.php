@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\SignerController;
@@ -30,6 +31,12 @@ Route::prefix('auth')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::post('logout', [AuthController::class, 'logout']);
     });
+});
+
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+    Route::get('profile',             [ProfileController::class, 'show']);
+    Route::put('profile',             [ProfileController::class, 'update']);
+    Route::put('profile/password',    [ProfileController::class, 'updatePassword']);
 });
 
 Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->group(function () {

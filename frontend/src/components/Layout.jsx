@@ -1,5 +1,14 @@
+import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { HomeIcon, DocumentTextIcon, RectangleStackIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import {
+    HomeIcon,
+    DocumentTextIcon,
+    RectangleStackIcon,
+    CreditCardIcon,
+    UserCircleIcon,
+    ArrowRightStartOnRectangleIcon,
+    ChevronUpDownIcon,
+} from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 import * as authApi from '../api/auth';
 
@@ -7,8 +16,75 @@ const NAV = [
     { label: 'Dashboard',   href: '/dashboard',        Icon: HomeIcon,           match: (p) => p === '/dashboard' },
     { label: 'Documentos',  href: '/documents',        Icon: DocumentTextIcon,   match: (p) => p === '/documents' || p.startsWith('/documents/') },
     { label: 'Plantillas',  href: '/templates',        Icon: RectangleStackIcon, match: (p) => p === '/templates' },
-    { label: 'Facturación', href: '/settings/billing', Icon: CreditCardIcon,     match: (p) => p.startsWith('/settings') },
+    { label: 'Facturación', href: '/settings/billing', Icon: CreditCardIcon,     match: (p) => p === '/settings/billing' },
 ];
+
+function UserMenu({ user, onLogout }) {
+    const [open, setOpen] = useState(false);
+    const ref             = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const initials = (user?.name ?? '?')
+        .split(' ')
+        .slice(0, 2)
+        .map((w) => w[0]?.toUpperCase() ?? '')
+        .join('');
+
+    return (
+        <div ref={ref} className="relative p-4 border-t border-gray-200">
+            <button
+                onClick={() => setOpen((o) => !o)}
+                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+            >
+                <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                >
+                    {initials}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-700 truncate">{user?.name}</p>
+                    <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                </div>
+                <ChevronUpDownIcon className="w-4 h-4 text-gray-400 shrink-0" />
+            </button>
+
+            {open && (
+                <div className="absolute bottom-full left-3 right-3 mb-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
+                    <Link
+                        to="/settings/profile"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        <UserCircleIcon className="w-4 h-4 text-gray-400" />
+                        Mi perfil
+                    </Link>
+                    <Link
+                        to="/settings/billing"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        <CreditCardIcon className="w-4 h-4 text-gray-400" />
+                        Facturación
+                    </Link>
+                    <div className="border-t border-gray-100 my-1" />
+                    <button
+                        onClick={() => { setOpen(false); onLogout(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                        <ArrowRightStartOnRectangleIcon className="w-4 h-4" />
+                        Cerrar sesión
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function Layout({ children }) {
     const { user, logout } = useAuth();
@@ -46,16 +122,7 @@ export default function Layout({ children }) {
                         );
                     })}
                 </nav>
-                <div className="p-4 border-t border-gray-200">
-                    <p className="text-sm font-medium text-gray-700 truncate">{user?.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{user?.email}</p>
-                    <button
-                        onClick={handleLogout}
-                        className="mt-3 text-sm text-red-600 hover:text-red-800 font-medium"
-                    >
-                        Cerrar sesión
-                    </button>
-                </div>
+                <UserMenu user={user} onLogout={handleLogout} />
             </aside>
 
             <main className="flex-1 overflow-auto flex flex-col">
