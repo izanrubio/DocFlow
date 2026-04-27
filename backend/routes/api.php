@@ -19,10 +19,12 @@ Route::prefix('auth')->group(function () {
         ->middleware('signed')
         ->name('verification.verify');
 
+    Route::post('email/resend', [AuthController::class, 'resendVerification'])
+        ->middleware('throttle:3,10');
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::post('logout', [AuthController::class, 'logout']);
-        Route::post('email/resend', [AuthController::class, 'resendVerification']);
     });
 });
 

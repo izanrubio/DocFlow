@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 
 export default function VerifyPending() {
     const { user }        = useAuth();
+    const email           = user?.email ?? (() => { try { return localStorage.getItem('pending_verify_email'); } catch { return ''; } })();
     const [cooldown, setCooldown] = useState(0);
     const [sending, setSending]   = useState(false);
     const [sent, setSent]         = useState(false);
@@ -21,7 +22,7 @@ export default function VerifyPending() {
         setError('');
         setSending(true);
         try {
-            await authApi.resendVerification();
+            await authApi.resendVerification(email);
             setSent(true);
             setCooldown(60);
         } catch (err) {
@@ -45,10 +46,10 @@ export default function VerifyPending() {
                 <p className="text-sm text-gray-500 mb-1">
                     Para acceder a DocFlow necesitas verificar tu dirección de email.
                 </p>
-                {user?.email && (
-                    <p className="text-sm font-semibold text-indigo-600 mb-6">{user.email}</p>
+                {email && (
+                    <p className="text-sm font-semibold text-indigo-600 mb-6">{email}</p>
                 )}
-                {!user?.email && <div className="mb-6" />}
+                {!email && <div className="mb-6" />}
 
                 <p className="text-sm text-gray-500 mb-6">
                     Revisa tu bandeja de entrada y la carpeta de spam.

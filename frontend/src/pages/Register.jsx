@@ -7,6 +7,7 @@ function EmailSentScreen({ email }) {
     const [cooldown, setCooldown] = useState(0);
     const [sending, setSending]   = useState(false);
     const [sent, setSent]         = useState(false);
+    const [error, setError]       = useState('');
 
     useEffect(() => {
         if (cooldown <= 0) return;
@@ -15,13 +16,14 @@ function EmailSentScreen({ email }) {
     }, [cooldown]);
 
     const handleResend = async () => {
+        setError('');
         setSending(true);
         try {
-            await authApi.resendVerification();
+            await authApi.resendVerification(email);
             setSent(true);
             setCooldown(60);
-        } catch {
-            // silently ignore — user not authenticated yet, but resend works server-side
+        } catch (err) {
+            setError(err.response?.data?.message ?? 'Error al reenviar el email.');
         } finally {
             setSending(false);
         }
@@ -48,6 +50,9 @@ function EmailSentScreen({ email }) {
 
                 {sent && (
                     <p className="text-xs text-green-600 font-medium mb-3">Email reenviado correctamente.</p>
+                )}
+                {error && (
+                    <p className="text-xs text-red-600 mb-3">{error}</p>
                 )}
 
                 <button
@@ -86,7 +91,9 @@ export default function Register() {
         setLoading(true);
         try {
             const { data } = await authApi.register(form);
-            setRegistered(data.data.email ?? form.email);
+            const email = data.data.email ?? form.email;
+            try { localStorage.setItem('pending_verify_email', email); } catch {}
+            setRegistered(email);
         } catch (err) {
             if (err.response?.status === 422) {
                 setErrors(err.response.data.errors || {});

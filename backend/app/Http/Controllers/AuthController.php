@@ -89,7 +89,13 @@ class AuthController extends Controller
 
     public function resendVerification(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $request->validate(['email' => 'required|email']);
+
+        $user = \App\Models\User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return $this->error('No existe ninguna cuenta con ese email.', 404);
+        }
 
         if ($user->hasVerifiedEmail()) {
             return $this->error('El email ya está verificado.', 422);
