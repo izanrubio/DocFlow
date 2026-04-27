@@ -8,23 +8,19 @@ use Illuminate\Support\Str;
 
 class AuthService
 {
-    public function register(string $name, string $email, string $password): array
+    public function register(string $name, string $email, string $password): User
     {
         $tenant = Tenant::create([
             'name' => $name,
             'slug' => $this->generateSlug($name),
         ]);
 
-        $user = User::create([
+        return User::create([
             'tenant_id' => $tenant->id,
-            'name' => $name,
-            'email' => $email,
-            'password' => $password,
+            'name'      => $name,
+            'email'     => $email,
+            'password'  => $password,
         ]);
-
-        $token = $user->createToken('auth-token')->plainTextToken;
-
-        return ['user' => $user->load('tenant'), 'token' => $token];
     }
 
     private function generateSlug(string $name): string

@@ -23,6 +23,12 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
     }
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.message?.toLowerCase().includes('verif')
+    ) {
+      window.location.href = '/verify-pending';
+    }
     return Promise.reject(error);
   }
 );

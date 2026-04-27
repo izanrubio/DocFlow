@@ -8,6 +8,8 @@ import PrivateRoute from './components/PrivateRoute';
 import PublicRoute from './components/PublicRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
+import VerifyPending from './pages/VerifyPending';
 import Dashboard from './pages/Dashboard';
 import Documents from './pages/Documents';
 import DocumentDetail from './pages/DocumentDetail';
@@ -27,6 +29,8 @@ createRoot(document.getElementById('root')).render(
         <Routes>
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/verify-pending" element={<VerifyPending />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/documents" element={<PrivateRoute><Documents /></PrivateRoute>} />
           <Route path="/documents/:id" element={<PrivateRoute><DocumentDetail /></PrivateRoute>} />

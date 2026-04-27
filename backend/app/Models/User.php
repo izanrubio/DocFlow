@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use App\Notifications\CustomVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, Notifiable;
+    use \Illuminate\Auth\MustVerifyEmail;
 
     protected $fillable = ['tenant_id', 'name', 'email', 'password'];
 
@@ -20,6 +23,11 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new CustomVerifyEmail());
+    }
 
     public function tenant(): BelongsTo
     {

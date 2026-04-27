@@ -15,13 +15,18 @@ Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
 
+    Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+        ->middleware('signed')
+        ->name('verification.verify');
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::post('logout', [AuthController::class, 'logout']);
+        Route::post('email/resend', [AuthController::class, 'resendVerification']);
     });
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 
     Route::get('documents', [DocumentController::class, 'index']);
@@ -44,7 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('templates/{id}/use', [TemplateController::class, 'use']);
 });
 
-Route::middleware('auth:sanctum')->prefix('billing')->group(function () {
+Route::middleware(['auth:sanctum', 'verified'])->prefix('billing')->group(function () {
     Route::get('plans',              [BillingController::class, 'plans']);
     Route::get('usage',              [BillingController::class, 'usage']);
     Route::post('checkout/{plan}',   [BillingController::class, 'checkout']);
