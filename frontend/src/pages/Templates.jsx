@@ -12,6 +12,7 @@ import Layout from '../components/Layout';
 import UploadTemplateModal from '../components/UploadTemplateModal';
 import UseTemplateModal from '../components/UseTemplateModal';
 import VariablesEditorModal from '../components/VariablesEditorModal';
+import TemplateVariablesHelp from '../components/TemplateVariablesHelp';
 import ConfirmModal from '../components/ConfirmModal';
 import { getTemplates, deleteTemplate } from '../api/templates';
 import { useToast } from '../context/ToastContext';
@@ -150,6 +151,8 @@ export default function Templates() {
                     Nueva plantilla
                 </button>
             </div>
+
+            <TemplateVariablesHelp />
 
             {isLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
