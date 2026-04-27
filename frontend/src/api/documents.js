@@ -1,6 +1,6 @@
 import api from '../utils/api';
 
-export const getDocuments  = (params) => api.get('/documents', { params });
+export const getDocuments  = (params, signal) => api.get('/documents', { params, signal });
 export const getDocument   = (id) => api.get(`/documents/${id}`);
 export const uploadDocument = (formData, onUploadProgress) =>
     api.post('/documents', formData, {

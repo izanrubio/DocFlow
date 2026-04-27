@@ -31,6 +31,32 @@ class DocumentService
             $query->where('status', $filters['status']);
         }
 
+        if (!empty($filters['search'])) {
+            $s = $filters['search'];
+            $query->where(function ($q) use ($s) {
+                $q->where('title', 'like', "%{$s}%")
+                  ->orWhere('original_filename', 'like', "%{$s}%");
+            });
+        }
+
+        if (!empty($filters['signer_email'])) {
+            $e = $filters['signer_email'];
+            $query->whereHas('signers', fn ($q) => $q->where('email', 'like', "%{$e}%"));
+        }
+
+        if (!empty($filters['signer_name'])) {
+            $n = $filters['signer_name'];
+            $query->whereHas('signers', fn ($q) => $q->where('name', 'like', "%{$n}%"));
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
         return $query->paginate(15);
     }
 

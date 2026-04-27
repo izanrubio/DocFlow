@@ -18,7 +18,10 @@ class DocumentController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $paginated = $this->service->list($request->user(), $request->only('status'));
+        $paginated = $this->service->list(
+            $request->user(),
+            $request->only('status', 'search', 'signer_email', 'signer_name', 'date_from', 'date_to')
+        );
         $resource  = DocumentResource::collection($paginated);
 
         return response()->json(
