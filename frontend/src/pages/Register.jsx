@@ -76,11 +76,12 @@ function EmailSentScreen({ email }) {
 }
 
 export default function Register() {
-    const [form, setForm]     = useState({ name: '', email: '', password: '', password_confirmation: '' });
-    const [error, setError]   = useState('');
-    const [errors, setErrors] = useState({});
+    const [form, setForm]       = useState({ name: '', email: '', password: '', password_confirmation: '' });
+    const [accepted, setAccepted] = useState(false);
+    const [error, setError]     = useState('');
+    const [errors, setErrors]   = useState({});
     const [loading, setLoading] = useState(false);
-    const [registered, setRegistered] = useState(null); // email string when done
+    const [registered, setRegistered] = useState(null);
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -160,8 +161,27 @@ export default function Register() {
                             placeholder="Repite la contraseña"
                         />
                     </div>
+                    <div className="flex items-start gap-3 pt-1">
+                        <input
+                            id="accept-terms"
+                            type="checkbox"
+                            checked={accepted}
+                            onChange={(e) => setAccepted(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+                        <label htmlFor="accept-terms" className="text-sm text-gray-600 cursor-pointer">
+                            He leído y acepto los{' '}
+                            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-medium">
+                                Términos de uso
+                            </a>{' '}
+                            y la{' '}
+                            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-medium">
+                                Política de privacidad
+                            </a>
+                        </label>
+                    </div>
                     <button
-                        type="submit" disabled={loading}
+                        type="submit" disabled={loading || !accepted}
                         className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
                     >
                         {loading ? 'Creando cuenta…' : 'Crear cuenta'}

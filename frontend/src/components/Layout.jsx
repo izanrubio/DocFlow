@@ -58,8 +58,17 @@ export default function Layout({ children }) {
                 </div>
             </aside>
 
-            <main className="flex-1 overflow-auto">
-                <div className="p-8">{children}</div>
+            <main className="flex-1 overflow-auto flex flex-col">
+                <div className="flex-1 p-8">{children}</div>
+                <footer className="border-t border-gray-200 px-8 py-3 flex items-center gap-4">
+                    <Link to="/privacy" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                        Privacidad
+                    </Link>
+                    <Link to="/terms" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                        Términos
+                    </Link>
+                    <span className="text-xs text-gray-300">© 2026 DocFlow</span>
+                </footer>
             </main>
         </div>
     );

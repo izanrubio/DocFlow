@@ -563,6 +563,8 @@ function Footer() {
                         <Link to="/pricing" className="hover:text-white transition-colors">Precios</Link>
                         <Link to="/login" className="hover:text-white transition-colors">Iniciar sesión</Link>
                         <Link to="/register" className="hover:text-white transition-colors">Crear cuenta</Link>
+                        <Link to="/privacy" className="hover:text-white transition-colors">Privacidad</Link>
+                        <Link to="/terms" className="hover:text-white transition-colors">Términos de uso</Link>
                     </nav>
 
                     <div className="text-sm text-center md:text-right">
