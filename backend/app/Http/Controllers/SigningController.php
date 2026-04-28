@@ -10,6 +10,7 @@ use App\Jobs\SendRejectionNotificationJob;
 use App\Jobs\SendSignatureRequestJob;
 use App\Models\Signature;
 use App\Models\Signer;
+use App\Services\NotificationService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -113,7 +114,7 @@ class SigningController extends Controller
         $request->validate(['signature_data' => ['required', 'string']]);
 
         $signer = Signer::where('token', $token)
-            ->with(['document.user:id,name', 'document.signers'])
+            ->with(['document.user:id,name,tenant_id', 'document.signers'])
             ->firstOrFail();
 
         if ($signer->status === SignerStatus::Signed) {
@@ -150,6 +151,14 @@ class SigningController extends Controller
             'type'      => DocumentEventType::Signed,
             'signer_id' => $signer->id,
         ]);
+
+        app(NotificationService::class)->create(
+            $document->user,
+            'document_signed',
+            'Nueva firma recibida',
+            "«{$signer->name}» ha firmado «{$document->title}»",
+            ['document_id' => $document->id, 'signer_id' => $signer->id]
+        );
 
         $allSigned = $document->signers()->where('status', '!=', SignerStatus::Signed->value)->doesntExist();
 
@@ -222,6 +231,14 @@ class SigningController extends Controller
             'tenant_id' => $document->tenant_id,
             'type'      => DocumentEventType::Cancelled,
         ]);
+
+        app(NotificationService::class)->create(
+            $document->user,
+            'document_rejected',
+            'Documento rechazado',
+            "«{$signer->name}» ha rechazado «{$document->title}»",
+            ['document_id' => $document->id, 'signer_id' => $signer->id]
+        );
 
         SendRejectionNotificationJob::dispatch($signer, $request->reason);
 

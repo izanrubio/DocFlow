@@ -7,6 +7,7 @@ use App\Enums\DocumentStatus;
 use App\Enums\SignerStatus;
 use App\Models\Document;
 use App\Models\User;
+use App\Services\NotificationService;
 use App\Services\PlanService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -15,7 +16,10 @@ use Illuminate\Support\Str;
 
 class DocumentService
 {
-    public function __construct(private PlanService $planService) {}
+    public function __construct(
+        private PlanService $planService,
+        private NotificationService $notificationService,
+    ) {}
 
     public function list(User $user, array $filters): LengthAwarePaginator
     {
@@ -88,6 +92,8 @@ class DocumentService
             'tenant_id' => $user->tenant_id,
             'type'      => DocumentEventType::Created,
         ]);
+
+        $this->notificationService->warnIfApproachingLimit($user, $this->planService);
 
         return $document->load('user:id,name');
     }

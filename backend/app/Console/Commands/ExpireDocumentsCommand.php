@@ -6,6 +6,7 @@ use App\Enums\DocumentEventType;
 use App\Enums\DocumentStatus;
 use App\Jobs\SendExpirationNotificationJob;
 use App\Models\Document;
+use App\Services\NotificationService;
 use Illuminate\Console\Command;
 
 class ExpireDocumentsCommand extends Command
@@ -17,16 +18,29 @@ class ExpireDocumentsCommand extends Command
     {
         $expired = 0;
 
-        Document::whereIn('status', [DocumentStatus::Sent->value, DocumentStatus::InProgress->value])
+        $notificationService = app(NotificationService::class);
+
+        Document::with('user')
+            ->whereIn('status', [DocumentStatus::Sent->value, DocumentStatus::InProgress->value])
             ->whereNotNull('expires_at')
             ->where('expires_at', '<', now())
-            ->each(function (Document $document) use (&$expired) {
+            ->each(function (Document $document) use (&$expired, $notificationService) {
                 $document->update(['status' => DocumentStatus::Expired]);
 
                 $document->events()->create([
                     'tenant_id' => $document->tenant_id,
                     'type'      => DocumentEventType::Expired,
                 ]);
+
+                if ($document->user) {
+                    $notificationService->create(
+                        $document->user,
+                        'document_expired',
+                        'Documento caducado',
+                        "«{$document->title}» ha caducado sin completarse",
+                        ['document_id' => $document->id]
+                    );
+                }
 
                 SendExpirationNotificationJob::dispatch($document->fresh());
                 $expired++;

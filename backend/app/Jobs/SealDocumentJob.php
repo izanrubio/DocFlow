@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Document;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
@@ -20,7 +21,7 @@ class SealDocumentJob implements ShouldQueue, NotTenantAware
 
     public function handle(): void
     {
-        $document = $this->document->load(['signers.signature']);
+        $document = $this->document->load(['signers.signature', 'user']);
 
         $tmpOriginal = tempnam(sys_get_temp_dir(), 'docflow_orig_') . '.pdf';
         $tmpSigned   = tempnam(sys_get_temp_dir(), 'docflow_signed_') . '.pdf';
@@ -73,6 +74,14 @@ class SealDocumentJob implements ShouldQueue, NotTenantAware
             Storage::disk('documents')->put($signedPath, file_get_contents($tmpSigned), 'private');
 
             $document->update(['signed_file_path' => $signedPath]);
+
+            app(NotificationService::class)->create(
+                $document->user,
+                'document_completed',
+                'Documento completado',
+                "Todos los firmantes han completado «{$document->title}»",
+                ['document_id' => $document->id]
+            );
 
             SendCompletionNotificationJob::dispatch($document->fresh());
         } finally {

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
@@ -61,6 +62,14 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->group(function 
     Route::delete('templates/{id}', [TemplateController::class, 'destroy']);
     Route::put('templates/{id}/variables', [TemplateController::class, 'variables']);
     Route::post('templates/{id}/use', [TemplateController::class, 'use']);
+});
+
+Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('notifications')->group(function () {
+    Route::get('',              [NotificationController::class, 'index']);
+    Route::get('unread-count', [NotificationController::class, 'unreadCount']);
+    Route::put('read-all',     [NotificationController::class, 'markAllAsRead']);
+    Route::put('{id}/read',    [NotificationController::class, 'markAsRead']);
+    Route::delete('{id}',      [NotificationController::class, 'destroy']);
 });
 
 Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('billing')->group(function () {

@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 import * as authApi from '../api/auth';
+import NotificationBell from './NotificationBell';
 
 const NAV = [
     { label: 'Dashboard',   href: '/dashboard',        Icon: HomeIcon,           match: (p) => p === '/dashboard' },
@@ -101,8 +102,9 @@ export default function Layout({ children }) {
     return (
         <div className="flex h-screen bg-gray-50">
             <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-                <div className="p-6 border-b border-gray-200">
+                <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                     <h1 className="text-xl font-bold text-indigo-600">DocFlow</h1>
+                    <NotificationBell />
                 </div>
                 <nav className="flex-1 p-4 space-y-1">
                     {NAV.map(({ label, href, Icon, match }) => {
