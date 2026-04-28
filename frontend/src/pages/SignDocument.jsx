@@ -29,11 +29,11 @@ const SIGNER_BADGE = {
     rejected: 'bg-red-100 text-red-700',
 };
 const SIGNER_LABEL = { pending: 'Pendiente', viewed: 'Visto', signed: 'Firmado', rejected: 'Rechazado' };
-const SIGNER_ICON  = {
-    pending:  <ClockIcon className="w-3.5 h-3.5" />,
-    viewed:   <EyeIcon className="w-3.5 h-3.5" />,
-    signed:   <CheckCircleIcon className="w-3.5 h-3.5" />,
-    rejected: <XCircleIcon className="w-3.5 h-3.5" />,
+const SIGNER_ICON = {
+    pending:  () => <ClockIcon className="w-3.5 h-3.5" />,
+    viewed:   () => <EyeIcon className="w-3.5 h-3.5" />,
+    signed:   () => <CheckCircleIcon className="w-3.5 h-3.5" />,
+    rejected: () => <XCircleIcon className="w-3.5 h-3.5" />,
 };
 
 function Header() {
@@ -309,7 +309,7 @@ export default function SignDocument() {
                                             {s.id === signer.id && <span className="text-indigo-500 text-xs ml-1">(tú)</span>}
                                         </span>
                                         <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${SIGNER_BADGE[s.status]}`}>
-                                            {SIGNER_ICON[s.status]}
+                                            {SIGNER_ICON[s.status]?.()}
                                             {SIGNER_LABEL[s.status]}
                                         </span>
                                     </li>
