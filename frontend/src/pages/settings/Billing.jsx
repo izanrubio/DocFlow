@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
     ArrowLeftIcon,
     CheckCircleIcon,
@@ -9,10 +9,12 @@ import {
     ArrowTopRightOnSquareIcon,
     ExclamationTriangleIcon,
     CheckBadgeIcon,
+    DocumentTextIcon,
+    ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import Layout from '../../components/Layout';
 import { useBillingUsage } from '../../hooks/useBillingUsage';
-import { createCheckout, createPortal, devSetPlan } from '../../api/billing';
+import { createCheckout, createPortal, devSetPlan, getInvoices } from '../../api/billing';
 
 const PLAN_LABELS = { free: 'Gratuito', pro: 'Profesional', business: 'Business' };
 const PLAN_PRICES = { free: '0€', pro: '19€', business: '49€' };
@@ -72,10 +74,121 @@ function UsageBar({ label, used, limit }) {
     );
 }
 
+const STATUS_INVOICE = {
+    paid:           { label: 'Pagada',    bg: '#dcfce7', color: '#15803d' },
+    open:           { label: 'Pendiente', bg: '#fef9c3', color: '#a16207' },
+    void:           { label: 'Cancelada', bg: '#f3f4f6', color: '#6b7280' },
+    uncollectible:  { label: 'Impagada',  bg: '#fee2e2', color: '#b91c1c' },
+};
+
+function formatDate(iso) {
+    return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function formatAmount(amount, currency) {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: currency.toUpperCase() }).format(amount);
+}
+
+function InvoicesSection({ invoices, isLoading }) {
+    const invoiceList = invoices ?? [];
+
+    return (
+        <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <DocumentTextIcon className="w-5 h-5 text-gray-400" />
+                <h2 className="text-sm font-semibold text-gray-800">Historial de facturas</h2>
+            </div>
+
+            {isLoading ? (
+                <div className="flex items-center justify-center py-10">
+                    <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+            ) : invoiceList.length === 0 ? (
+                <div className="px-6 py-10 text-center">
+                    <DocumentTextIcon className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                    <p className="text-sm font-medium text-gray-500">Aún no tienes facturas</p>
+                    <p className="text-xs text-gray-400 mt-1">Aparecerán aquí cuando actualices tu plan.</p>
+                </div>
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                <th className="px-6 py-3 text-left">Fecha</th>
+                                <th className="px-4 py-3 text-left">Nº factura</th>
+                                <th className="px-4 py-3 text-right">Importe</th>
+                                <th className="px-4 py-3 text-left">Estado</th>
+                                <th className="px-6 py-3 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {invoiceList.map((inv) => {
+                                const s = STATUS_INVOICE[inv.status] ?? STATUS_INVOICE.void;
+                                return (
+                                    <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-3.5 text-gray-700 whitespace-nowrap">
+                                            {formatDate(inv.date)}
+                                        </td>
+                                        <td className="px-4 py-3.5 text-gray-500 font-mono text-xs">
+                                            {inv.number ?? inv.id}
+                                        </td>
+                                        <td className="px-4 py-3.5 text-gray-800 font-semibold text-right whitespace-nowrap">
+                                            {formatAmount(inv.amount, inv.currency)}
+                                        </td>
+                                        <td className="px-4 py-3.5">
+                                            <span
+                                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+                                                style={{ background: s.bg, color: s.color }}
+                                            >
+                                                {s.label}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-3.5">
+                                            <div className="flex items-center justify-end gap-2">
+                                                {inv.hosted_url && (
+                                                    <a
+                                                        href={inv.hosted_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
+                                                    >
+                                                        <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+                                                        Ver
+                                                    </a>
+                                                )}
+                                                {inv.pdf_url && (
+                                                    <a
+                                                        href={inv.pdf_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                                    >
+                                                        <ArrowDownTrayIcon className="w-3 h-3" />
+                                                        PDF
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function Billing() {
     const { data, isLoading, refetch } = useBillingUsage();
     const [upgradeModal, setUpgradeModal] = useState(false);
     const [portalError, setPortalError]   = useState(null);
+
+    const { data: invoicesData, isLoading: invoicesLoading } = useQuery({
+        queryKey: ['invoices'],
+        queryFn:  () => getInvoices().then((r) => r.data.data),
+    });
 
     const devPlanMutation = useMutation({
         mutationFn: (plan) => devSetPlan(plan),
@@ -243,6 +356,9 @@ export default function Billing() {
                 </div>
 
                 </div>{/* end grid */}
+
+                {/* ── Historial de facturas ───────────────────────── */}
+                <InvoicesSection invoices={invoicesData} isLoading={invoicesLoading} />
 
                 {/* ── [DEV] panel ─────────────────────────────────── */}
                 {import.meta.env.DEV && (

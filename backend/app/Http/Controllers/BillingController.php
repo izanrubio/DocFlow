@@ -86,4 +86,33 @@ class BillingController extends Controller
             'stripe_subscription_id' => $tenant->stripe_subscription_id,
         ]);
     }
+
+    public function invoices(Request $request): JsonResponse
+    {
+        $tenant = $request->user()->tenant;
+
+        if (!$tenant->stripe_customer_id) {
+            return $this->success([]);
+        }
+
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+
+        $invoices = \Stripe\Invoice::all([
+            'customer' => $tenant->stripe_customer_id,
+            'limit'    => 24,
+        ]);
+
+        $formatted = collect($invoices->data)->map(fn ($inv) => [
+            'id'          => $inv->id,
+            'number'      => $inv->number,
+            'date'        => date('Y-m-d', $inv->created),
+            'amount'      => $inv->amount_paid / 100,
+            'currency'    => $inv->currency,
+            'status'      => $inv->status,
+            'pdf_url'     => $inv->invoice_pdf,
+            'hosted_url'  => $inv->hosted_invoice_url,
+        ]);
+
+        return $this->success($formatted);
+    }
 }

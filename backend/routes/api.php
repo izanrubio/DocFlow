@@ -78,6 +78,7 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('billing
     Route::post('checkout/{plan}',   [BillingController::class, 'checkout']);
     Route::post('portal',            [BillingController::class, 'portal']);
     Route::get('subscription',       [BillingController::class, 'subscription']);
+    Route::get('invoices',           [BillingController::class, 'invoices']);
 });
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
