@@ -20,33 +20,33 @@ import {
 
 function timeAgo(iso) {
     const seconds = Math.floor((Date.now() - new Date(iso)) / 1000);
-    if (seconds < 60)   return 'ahora mismo';
+    if (seconds < 60)  return 'ahora mismo';
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60)   return `hace ${minutes} min`;
+    if (minutes < 60)  return `hace ${minutes} min`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24)     return `hace ${hours}h`;
+    if (hours < 24)    return `hace ${hours}h`;
     const days = Math.floor(hours / 24);
     return `hace ${days}d`;
 }
 
 const TYPE_ICON = {
-    document_signed:    <CheckCircleIcon   className="w-5 h-5 text-green-500" />,
-    document_completed: <CheckCircleSolid  className="w-5 h-5 text-green-600" />,
-    document_rejected:  <XCircleIcon       className="w-5 h-5 text-red-500" />,
-    document_expired:   <ClockIcon         className="w-5 h-5 text-orange-500" />,
-    signer_reminder:    <BellIcon          className="w-5 h-5 text-blue-500" />,
-    plan_limit_warning: <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500" />,
+    document_signed:    <CheckCircleIcon        className="w-5 h-5 text-green-500 shrink-0" />,
+    document_completed: <CheckCircleSolid       className="w-5 h-5 text-green-600 shrink-0" />,
+    document_rejected:  <XCircleIcon            className="w-5 h-5 text-red-500 shrink-0" />,
+    document_expired:   <ClockIcon              className="w-5 h-5 text-orange-500 shrink-0" />,
+    signer_reminder:    <BellIcon               className="w-5 h-5 text-blue-500 shrink-0" />,
+    plan_limit_warning: <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 shrink-0" />,
 };
 
 export default function NotificationBell() {
-    const [open, setOpen]       = useState(false);
-    const ref                   = useRef(null);
-    const navigate              = useNavigate();
-    const queryClient           = useQueryClient();
+    const [open, setOpen] = useState(false);
+    const ref             = useRef(null);
+    const navigate        = useNavigate();
+    const queryClient     = useQueryClient();
 
     const { data: countData } = useQuery({
-        queryKey: ['notifications-unread-count'],
-        queryFn:  () => getUnreadCount().then((r) => r.data.data),
+        queryKey:        ['notifications-unread-count'],
+        queryFn:         () => getUnreadCount().then((r) => r.data.data),
         refetchInterval: 30000,
     });
 
@@ -56,29 +56,14 @@ export default function NotificationBell() {
         enabled:  open,
     });
 
-    const readMutation = useMutation({
-        mutationFn: (id) => markAsRead(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
-            queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
-        },
-    });
+    const invalidate = () => {
+        queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
+    };
 
-    const readAllMutation = useMutation({
-        mutationFn: markAllAsRead,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
-            queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
-        },
-    });
-
-    const deleteMutation = useMutation({
-        mutationFn: (id) => deleteNotification(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
-            queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
-        },
-    });
+    const readMutation    = useMutation({ mutationFn: (id) => markAsRead(id),        onSuccess: invalidate });
+    const readAllMutation = useMutation({ mutationFn: markAllAsRead,                 onSuccess: invalidate });
+    const deleteMutation  = useMutation({ mutationFn: (id) => deleteNotification(id), onSuccess: invalidate });
 
     useEffect(() => {
         const handler = (e) => {
@@ -88,90 +73,106 @@ export default function NotificationBell() {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    const unreadCount = countData?.count ?? 0;
+    const unreadCount   = countData?.count ?? 0;
     const notifications = listData ?? [];
 
     const handleClick = (n) => {
         if (!n.read_at) readMutation.mutate(n.id);
+        setOpen(false);
         const docId = n.data?.document_id;
-        if (docId) {
-            navigate(`/documents/${docId}`);
-            setOpen(false);
-        }
+        if (docId) navigate(`/documents/${docId}`);
     };
 
     return (
         <div ref={ref} className="relative">
+            {/* Bell button */}
             <button
                 onClick={() => setOpen((o) => !o)}
-                className="relative p-1.5 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                className="relative p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                 aria-label="Notificaciones"
             >
                 <BellIcon className="w-5 h-5" />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-red-500 rounded-full leading-none">
+                    <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-0.5 text-[10px] font-bold text-white bg-red-500 rounded-full leading-none">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
             </button>
 
+            {/* Dropdown panel — right-0 aligns right edge with bell, top-full opens downward */}
             {open && (
                 <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 flex flex-col max-h-[480px]">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
-                        <span className="text-sm font-semibold text-gray-800">Notificaciones</span>
+
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-xl border-b border-gray-200 shrink-0">
+                        <span className="text-sm font-bold text-gray-800">Notificaciones</span>
                         {unreadCount > 0 && (
                             <button
                                 onClick={() => readAllMutation.mutate()}
                                 disabled={readAllMutation.isPending}
-                                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
+                                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50 transition-colors"
                             >
-                                Marcar todas como leídas
+                                Marcar todas leídas
                             </button>
                         )}
                     </div>
 
+                    {/* List */}
                     <div className="overflow-y-auto flex-1">
                         {listLoading ? (
-                            <div className="flex items-center justify-center py-10">
+                            <div className="flex items-center justify-center py-12">
                                 <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                             </div>
                         ) : notifications.length === 0 ? (
-                            <div className="py-10 text-center">
-                                <BellIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                <p className="text-sm text-gray-400">No tienes notificaciones nuevas</p>
+                            <div className="py-12 text-center px-4">
+                                <BellIcon className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                                <p className="text-sm font-medium text-gray-400">No tienes notificaciones nuevas</p>
+                                <p className="text-xs text-gray-300 mt-1">Te avisaremos cuando haya novedades</p>
                             </div>
                         ) : (
-                            <ul>
+                            <ul className="divide-y divide-gray-100">
                                 {notifications.map((n) => (
                                     <li
                                         key={n.id}
-                                        className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 transition-colors ${
-                                            !n.read_at ? 'bg-indigo-50/50' : 'hover:bg-gray-50'
+                                        className={`flex items-start gap-3 px-4 py-4 transition-colors group ${
+                                            !n.read_at
+                                                ? 'bg-blue-50/40 hover:bg-blue-50/70'
+                                                : 'hover:bg-gray-50'
                                         }`}
                                     >
+                                        {/* Unread dot */}
+                                        <div className="shrink-0 mt-1 flex flex-col items-center gap-1">
+                                            {TYPE_ICON[n.type] ?? <BellIcon className="w-5 h-5 text-gray-400 shrink-0" />}
+                                            {!n.read_at && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                            )}
+                                        </div>
+
+                                        {/* Content */}
                                         <button
-                                            className="flex items-start gap-3 flex-1 text-left min-w-0"
+                                            className="flex-1 text-left min-w-0"
                                             onClick={() => handleClick(n)}
                                         >
-                                            <div className="shrink-0 mt-0.5">
-                                                {TYPE_ICON[n.type] ?? <BellIcon className="w-5 h-5 text-gray-400" />}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className={`text-sm leading-snug truncate ${!n.read_at ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
-                                                    {n.title}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 leading-snug">
-                                                    {n.message}
-                                                </p>
-                                                <p className="text-[11px] text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
-                                            </div>
+                                            <p className={`text-sm leading-snug ${
+                                                !n.read_at
+                                                    ? 'font-semibold text-gray-900'
+                                                    : 'font-medium text-gray-700'
+                                            }`}>
+                                                {n.title}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                                                {n.message}
+                                            </p>
+                                            <p className="text-[11px] text-gray-400 mt-1.5">{timeAgo(n.created_at)}</p>
                                         </button>
+
+                                        {/* Delete */}
                                         <button
-                                            onClick={() => deleteMutation.mutate(n.id)}
-                                            className="shrink-0 mt-0.5 text-gray-300 hover:text-gray-500 transition-colors"
-                                            aria-label="Eliminar"
+                                            onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(n.id); }}
+                                            className="shrink-0 mt-0.5 text-gray-300 hover:text-gray-500 opacity-0 group-hover:opacity-100 transition-all"
+                                            aria-label="Eliminar notificación"
                                         >
-                                            <XMarkIcon className="w-3.5 h-3.5" />
+                                            <XMarkIcon className="w-4 h-4" />
                                         </button>
                                     </li>
                                 ))}
@@ -179,7 +180,8 @@ export default function NotificationBell() {
                         )}
                     </div>
 
-                    <div className="px-4 py-2.5 border-t border-gray-100 shrink-0">
+                    {/* Footer */}
+                    <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 rounded-b-xl shrink-0">
                         <p className="text-xs text-gray-400 text-center">Últimas 20 notificaciones</p>
                     </div>
                 </div>

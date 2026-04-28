@@ -101,10 +101,9 @@ export default function Layout({ children }) {
 
     return (
         <div className="flex h-screen bg-gray-50">
-            <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-                <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+            <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
+                <div className="p-6 border-b border-gray-200">
                     <h1 className="text-xl font-bold text-indigo-600">DocFlow</h1>
-                    <NotificationBell />
                 </div>
                 <nav className="flex-1 p-4 space-y-1">
                     {NAV.map(({ label, href, Icon, match }) => {
@@ -127,9 +126,15 @@ export default function Layout({ children }) {
                 <UserMenu user={user} onLogout={handleLogout} />
             </aside>
 
-            <main className="flex-1 overflow-auto flex flex-col">
-                <div className="flex-1 p-8">{children}</div>
-                <footer className="border-t border-gray-200 px-8 py-3 flex items-center gap-4">
+            {/* main: flex-col, NO overflow here — only the content div scrolls */}
+            <main className="flex-1 flex flex-col min-w-0">
+                <header className="h-14 shrink-0 bg-white border-b border-gray-200 px-8 flex items-center justify-end">
+                    <NotificationBell />
+                </header>
+
+                <div className="flex-1 overflow-auto p-8">{children}</div>
+
+                <footer className="shrink-0 border-t border-gray-200 px-8 py-3 flex items-center gap-4">
                     <Link to="/privacy" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
                         Privacidad
                     </Link>
