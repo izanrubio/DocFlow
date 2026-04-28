@@ -52,6 +52,7 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->group(function 
     Route::post('documents/{document}/send', [SignerController::class, 'send']);
 
     Route::get('documents/{id}/download', [DocumentController::class, 'download']);
+    Route::get('documents/{id}/download-original', [DocumentController::class, 'downloadOriginal']);
 
     Route::get('templates', [TemplateController::class, 'index']);
     Route::post('templates', [TemplateController::class, 'store']);

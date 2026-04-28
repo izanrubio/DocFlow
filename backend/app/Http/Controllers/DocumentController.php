@@ -67,4 +67,14 @@ class DocumentController extends Controller
 
         return $this->success(['download_url' => $url]);
     }
+
+    public function downloadOriginal(Request $request, int $id): JsonResponse
+    {
+        $document = $this->service->show($request->user(), $id);
+
+        $url = Storage::disk('documents_public')
+            ->temporaryUrl($document->file_path, now()->addMinutes(60));
+
+        return $this->success(['download_url' => $url]);
+    }
 }

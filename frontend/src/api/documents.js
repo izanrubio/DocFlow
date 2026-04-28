@@ -12,4 +12,5 @@ export const deleteDocument = (id) => api.delete(`/documents/${id}`);
 export const addSigner    = (documentId, data) => api.post(`/documents/${documentId}/signers`, data);
 export const removeSigner = (documentId, signerId) => api.delete(`/documents/${documentId}/signers/${signerId}`);
 export const sendDocument     = (documentId) => api.post(`/documents/${documentId}/send`);
-export const downloadDocument = (documentId) => api.get(`/documents/${documentId}/download`);
+export const downloadDocument         = (documentId) => api.get(`/documents/${documentId}/download`);
+export const downloadOriginalDocument = (documentId) => api.get(`/documents/${documentId}/download-original`);

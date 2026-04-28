@@ -23,7 +23,7 @@ import {
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
-import { getDocument, deleteDocument, addSigner, removeSigner, sendDocument, downloadDocument } from '../api/documents';
+import { getDocument, deleteDocument, addSigner, removeSigner, sendDocument, downloadDocument, downloadOriginalDocument } from '../api/documents';
 import { useBillingUsage } from '../hooks/useBillingUsage';
 import { useToast } from '../context/ToastContext';
 
@@ -385,6 +385,17 @@ export default function DocumentDetail() {
                             )}
                         </div>
                     </div>
+
+                    <button
+                        onClick={async () => {
+                            const res = await downloadOriginalDocument(id);
+                            window.open(res.data.data.download_url, '_blank');
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                    >
+                        <ArrowDownTrayIcon className="w-4 h-4" />
+                        Descargar PDF original
+                    </button>
 
                     <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
                         <div className="flex items-center justify-between">
