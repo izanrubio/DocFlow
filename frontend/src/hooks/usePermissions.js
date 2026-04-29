@@ -1,18 +1,31 @@
 import { useAuthStore } from '../store/authStore';
 
-export function usePermissions() {
-    const user     = useAuthStore((s) => s.user);
-    const role     = user?.role ?? 'viewer';
+function normalizeRole(rawRole) {
+    if (!rawRole) return null;
+    // Handles both string 'viewer' and enum object {value: 'viewer', ...}
+    if (typeof rawRole === 'object' && rawRole.value) return rawRole.value;
+    return String(rawRole);
+}
 
-    const isViewer = role === 'viewer';
+export function usePermissions() {
+    const user = useAuthStore((s) => s.user);
+    const role = normalizeRole(user?.role);
+
+    // If role is unknown/missing, default to most restrictive (viewer)
+    const isViewer = !role || role === 'viewer';
     const isEditor = role === 'editor';
     const isAdmin  = role === 'admin';
 
-    const canCreate = !isViewer;
-    const canEdit   = !isViewer;
-    const canDelete = !isViewer;
+    const canCreate = isAdmin || isEditor;
+    const canEdit   = isAdmin || isEditor;
+    const canDelete = isAdmin || isEditor;
 
-    const noPermissionMsg = 'No tienes permisos para realizar esta acción. Contacta con tu administrador.';
+    const noPermMsg = 'No tienes permisos para realizar esta acción. Contacta con tu administrador.';
 
-    return { canCreate, canEdit, canDelete, isViewer, isEditor, isAdmin, noPermissionMsg };
+    if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.debug('[usePermissions] raw role:', user?.role, '→ normalized:', role, '→ isViewer:', isViewer);
+    }
+
+    return { canCreate, canEdit, canDelete, isViewer, isEditor, isAdmin, noPermMsg };
 }

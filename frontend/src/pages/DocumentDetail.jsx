@@ -406,10 +406,10 @@ export default function DocumentDetail() {
                             </h2>
                             {isDraft && !showAddForm && (
                                 <button
-                                    onClick={() => { setShowAddForm(true); setSignerForm({ ...EMPTY_SIGNER, order: (doc.signers?.length ?? 0) + 1 }); }}
+                                    onClick={() => { if (isViewer || signerAtLimit) return; setShowAddForm(true); setSignerForm({ ...EMPTY_SIGNER, order: (doc.signers?.length ?? 0) + 1 }); }}
                                     disabled={signerAtLimit || isViewer}
                                     title={isViewer ? 'No tienes permisos para añadir firmantes' : signerAtLimit ? `Límite de ${signerLimit} firmantes alcanzado` : undefined}
-                                    className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className={`flex items-center gap-1 text-xs text-indigo-600 font-medium ${(isViewer || signerAtLimit) ? 'opacity-40 cursor-not-allowed' : 'hover:text-indigo-800'}`}
                                 >
                                     <UserPlusIcon className="w-3.5 h-3.5" /> Añadir
                                 </button>
@@ -509,10 +509,12 @@ export default function DocumentDetail() {
 
                         {isDraft && hasSigner && !showAddForm && (
                             <button
-                                onClick={handleSend}
+                                onClick={() => { if (isViewer) return; handleSend(); }}
                                 disabled={sendMutation.isPending || isViewer}
                                 title={isViewer ? 'No tienes permisos para enviar documentos' : undefined}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-2"
+                                className={`w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg transition-colors mt-2 ${
+                                    isViewer || sendMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'
+                                }`}
                             >
                                 <PaperAirplaneIcon className="w-4 h-4" />
                                 {sendMutation.isPending ? 'Enviando…' : 'Enviar para firma'}
@@ -539,10 +541,12 @@ export default function DocumentDetail() {
 
                     {isDraft && (
                         <button
-                            onClick={handleDelete}
+                            onClick={() => { if (isViewer) return; handleDelete(); }}
                             disabled={deleteMutation.isPending || isViewer}
                             title={isViewer ? 'No tienes permisos para eliminar documentos' : undefined}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className={`w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg transition-colors ${
+                                isViewer || deleteMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-50'
+                            }`}
                         >
                             <TrashIcon className="w-4 h-4" />
                             {deleteMutation.isPending ? 'Eliminando…' : 'Eliminar documento'}

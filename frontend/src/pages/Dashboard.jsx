@@ -242,20 +242,28 @@ export default function Dashboard() {
                         <h2 className="text-sm font-semibold text-gray-900 mb-4">Acciones rápidas</h2>
                         <div className="flex flex-col gap-2.5">
                             <button
-                                onClick={() => setShowUpload(true)}
+                                onClick={() => { if (isViewer) return; setShowUpload(true); }}
                                 disabled={isViewer}
                                 title={isViewer ? 'No tienes permisos para crear documentos' : undefined}
-                                className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-white rounded-xl transition-all duration-200 hover:opacity-90 hover:shadow-lg hover:shadow-indigo-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50 disabled:hover:shadow-none disabled:active:scale-100"
+                                className={`flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-white rounded-xl transition-all duration-200 ${
+                                    isViewer
+                                        ? 'opacity-50 cursor-not-allowed'
+                                        : 'hover:opacity-90 hover:shadow-lg hover:shadow-indigo-200 active:scale-[0.98]'
+                                }`}
                                 style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}
                             >
                                 <PlusIcon className="w-4 h-4" />
                                 Subir documento
                             </button>
                             <button
-                                onClick={() => navigate('/templates')}
+                                onClick={() => { if (isViewer) return; navigate('/templates'); }}
                                 disabled={isViewer}
                                 title={isViewer ? 'No tienes permisos para crear documentos' : undefined}
-                                className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-200"
+                                className={`flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl transition-colors ${
+                                    isViewer
+                                        ? 'opacity-50 cursor-not-allowed'
+                                        : 'hover:bg-gray-50 hover:border-gray-300'
+                                }`}
                             >
                                 <RectangleStackIcon className="w-4 h-4 text-gray-400" />
                                 Desde plantilla

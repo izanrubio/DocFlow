@@ -240,18 +240,24 @@ export default function Documents() {
                 <h1 className="text-2xl font-bold text-gray-900">Mis documentos</h1>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => navigate('/templates')}
+                        onClick={() => { if (isViewer) return; navigate('/templates'); }}
                         disabled={isViewer}
                         title={isViewer ? 'No tienes permisos para crear documentos' : undefined}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg transition-colors ${
+                            isViewer
+                                ? 'opacity-50 cursor-not-allowed'
+                                : 'hover:bg-gray-50'
+                        }`}
                     >
                         Desde plantilla
                     </button>
                     <button
-                        onClick={() => setShowModal(true)}
+                        onClick={() => { if (isViewer) return; setShowModal(true); }}
                         disabled={isViewer}
                         title={isViewer ? 'No tienes permisos para crear documentos' : undefined}
-                        className="flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors ${
+                            isViewer ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                         style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
                     >
                         <PlusIcon className="w-4 h-4" />

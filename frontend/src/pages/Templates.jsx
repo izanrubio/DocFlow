@@ -70,10 +70,12 @@ function TemplateCard({ template, onUse, onDelete, onEditVariables, isViewer }) 
 
             <div className="flex items-center gap-2 pt-1 border-t border-gray-100">
                 <button
-                    onClick={() => onUse(template)}
+                    onClick={() => { if (isViewer) return; onUse(template); }}
                     disabled={isViewer}
                     title={isViewer ? noPermMsg : undefined}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg transition-colors ${
+                        isViewer ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'
+                    }`}
                 >
                     Usar plantilla
                 </button>
@@ -91,18 +93,22 @@ function TemplateCard({ template, onUse, onDelete, onEditVariables, isViewer }) 
                 {!template.is_system && (
                     <>
                         <button
-                            onClick={() => onEditVariables(template)}
+                            onClick={() => { if (isViewer) return; onEditVariables(template); }}
                             disabled={isViewer}
                             title={isViewer ? noPermMsg : 'Editar variables'}
-                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                            className={`p-1.5 rounded-lg transition-colors ${
+                                isViewer ? 'text-gray-300 opacity-50 cursor-not-allowed' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'
+                            }`}
                         >
                             <PencilSquareIcon className="w-4 h-4" />
                         </button>
                         <button
-                            onClick={() => onDelete(template)}
+                            onClick={() => { if (isViewer) return; onDelete(template); }}
                             disabled={isViewer}
                             title={isViewer ? noPermMsg : 'Eliminar plantilla'}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                            className={`p-1.5 rounded-lg transition-colors ${
+                                isViewer ? 'text-gray-300 opacity-50 cursor-not-allowed' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                            }`}
                         >
                             <TrashIcon className="w-4 h-4" />
                         </button>
@@ -151,10 +157,12 @@ export default function Templates() {
                     </p>
                 </div>
                 <button
-                    onClick={() => setShowUpload(true)}
+                    onClick={() => { if (isViewer) return; setShowUpload(true); }}
                     disabled={isViewer}
                     title={isViewer ? 'No tienes permisos para crear plantillas' : undefined}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors bg-indigo-600 ${
+                        isViewer ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'
+                    }`}
                 >
                     <PlusIcon className="w-4 h-4" />
                     Nueva plantilla
@@ -183,10 +191,12 @@ export default function Templates() {
                                     Sube un PDF para reutilizarlo fácilmente.
                                 </p>
                                 <button
-                                    onClick={() => setShowUpload(true)}
+                                    onClick={() => { if (isViewer) return; setShowUpload(true); }}
                                     disabled={isViewer}
                                     title={isViewer ? 'No tienes permisos para crear plantillas' : undefined}
-                                    className="mt-4 px-4 py-2 text-sm font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className={`mt-4 px-4 py-2 text-sm font-medium text-indigo-600 border border-indigo-200 rounded-lg transition-colors ${
+                                        isViewer ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-50'
+                                    }`}
                                 >
                                     Subir primera plantilla
                                 </button>
