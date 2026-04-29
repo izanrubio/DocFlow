@@ -85,6 +85,7 @@ class TeamService
         abort_if($target->is_owner, 403, 'No puedes cambiar el rol del propietario de la cuenta.');
 
         $target->update(['role' => $role]);
+        $target->tokens()->delete();
 
         return $target->fresh();
     }

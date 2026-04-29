@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
 import { ToastProvider } from './context/ToastContext';
 import PrivateRoute from './components/PrivateRoute';
+import AuthSync from './components/AuthSync';
 import PublicRoute from './components/PublicRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotFound from './pages/errors/NotFound';
@@ -34,6 +35,7 @@ createRoot(document.getElementById('root')).render(
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
       <BrowserRouter>
+        <AuthSync />
         <Routes>
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
