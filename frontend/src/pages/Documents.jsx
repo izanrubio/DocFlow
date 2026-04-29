@@ -16,6 +16,7 @@ import {
 import Layout from '../components/Layout';
 import UploadDocumentModal from '../components/UploadDocumentModal';
 import { getDocuments } from '../api/documents';
+import { useAuth } from '../hooks/useAuth';
 
 const STATUS_TABS = [
     { label: 'Todos',      value: '' },
@@ -105,6 +106,8 @@ function EmptySearch({ term }) {
 }
 
 export default function Documents() {
+    const { user }             = useAuth();
+    const isViewer             = user?.role === 'viewer';
     const navigate             = useNavigate();
     const location             = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -236,22 +239,31 @@ export default function Documents() {
         <Layout>
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Mis documentos</h1>
-                <div className="flex items-center gap-2">
-                    <Link
-                        to="/templates"
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                        Desde plantilla
-                    </Link>
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
-                        style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-                    >
-                        <PlusIcon className="w-4 h-4" />
-                        Subir documento
-                    </button>
-                </div>
+                {isViewer ? (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                        <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 shrink-0" />
+                        <p className="text-sm text-amber-700">
+                            No tienes permisos para crear documentos. Contacta con tu administrador.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <Link
+                            to="/templates"
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            Desde plantilla
+                        </Link>
+                        <button
+                            onClick={() => setShowModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
+                            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                        >
+                            <PlusIcon className="w-4 h-4" />
+                            Subir documento
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Search bar + Filters button */}

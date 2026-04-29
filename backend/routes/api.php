@@ -44,25 +44,27 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->group(function () {
     Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 
-    Route::get('documents', [DocumentController::class, 'index']);
-    Route::post('documents', [DocumentController::class, 'store']);
-    Route::get('documents/{id}', [DocumentController::class, 'show']);
-    Route::delete('documents/{id}', [DocumentController::class, 'destroy']);
-
-    Route::post('documents/{document}/signers', [SignerController::class, 'store']);
-    Route::delete('documents/{document}/signers/{signer}', [SignerController::class, 'destroy']);
-    Route::post('documents/{document}/send', [SignerController::class, 'send']);
-
-    Route::get('documents/{id}/download', [DocumentController::class, 'download']);
+    // Read — all roles
+    Route::get('documents',                    [DocumentController::class, 'index']);
+    Route::get('documents/{id}',               [DocumentController::class, 'show']);
+    Route::get('documents/{id}/download',      [DocumentController::class, 'download']);
     Route::get('documents/{id}/download-original', [DocumentController::class, 'downloadOriginal']);
-
-    Route::get('templates', [TemplateController::class, 'index']);
-    Route::post('templates', [TemplateController::class, 'store']);
+    Route::get('templates',    [TemplateController::class, 'index']);
     Route::get('templates/{id}', [TemplateController::class, 'show']);
-    Route::put('templates/{id}', [TemplateController::class, 'update']);
-    Route::delete('templates/{id}', [TemplateController::class, 'destroy']);
-    Route::put('templates/{id}/variables', [TemplateController::class, 'variables']);
-    Route::post('templates/{id}/use', [TemplateController::class, 'use']);
+
+    // Write — admin + editor only
+    Route::middleware('role:admin,editor')->group(function () {
+        Route::post('documents',                              [DocumentController::class, 'store']);
+        Route::delete('documents/{id}',                      [DocumentController::class, 'destroy']);
+        Route::post('documents/{document}/signers',          [SignerController::class, 'store']);
+        Route::delete('documents/{document}/signers/{signer}', [SignerController::class, 'destroy']);
+        Route::post('documents/{document}/send',             [SignerController::class, 'send']);
+        Route::post('templates',                             [TemplateController::class, 'store']);
+        Route::put('templates/{id}',                         [TemplateController::class, 'update']);
+        Route::delete('templates/{id}',                      [TemplateController::class, 'destroy']);
+        Route::put('templates/{id}/variables',               [TemplateController::class, 'variables']);
+        Route::post('templates/{id}/use',                    [TemplateController::class, 'use']);
+    });
 });
 
 Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('notifications')->group(function () {
@@ -89,6 +91,7 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('team')-
     Route::delete('{userId}',                 [TeamController::class, 'remove'])->middleware('role:admin');
     Route::post('invitations/{id}/resend',    [TeamController::class, 'resend'])->middleware('role:admin');
     Route::delete('invitations/{id}',         [TeamController::class, 'cancelInvitation'])->middleware('role:admin');
+    Route::post('transfer-ownership/{userId}', [TeamController::class, 'transferOwnership']);
 });
 
 Route::post('team/accept/{token}', [TeamController::class, 'accept'])->middleware('throttle:api');

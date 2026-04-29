@@ -16,14 +16,15 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasApiTokens, Notifiable;
     use \Illuminate\Auth\MustVerifyEmail;
 
-    protected $fillable = ['tenant_id', 'name', 'email', 'password', 'role', 'invited_by'];
+    protected $fillable = ['tenant_id', 'name', 'email', 'password', 'role', 'invited_by', 'is_owner'];
 
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password'          => 'hashed',
-        'role'              => TeamRole::class,
+        'role'     => TeamRole::class,
+        'is_owner' => 'boolean',
     ];
 
     public function isAdmin(): bool

@@ -22,6 +22,7 @@ class AuthService
             'email'     => $email,
             'password'  => $password,
             'role'      => TeamRole::Admin,
+            'is_owner'  => true,
         ]);
     }
 

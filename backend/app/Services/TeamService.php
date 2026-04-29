@@ -14,13 +14,14 @@ class TeamService
     {
         $members = User::where('tenant_id', $user->tenant_id)
             ->orderBy('created_at')
-            ->get(['id', 'name', 'email', 'role', 'created_at'])
+            ->get(['id', 'name', 'email', 'role', 'is_owner', 'created_at'])
             ->map(fn ($u) => [
                 'id'         => $u->id,
                 'name'       => $u->name,
                 'email'      => $u->email,
                 'role'       => $u->role->value,
                 'role_label' => $u->role->label(),
+                'is_owner'   => (bool) $u->is_owner,
                 'is_self'    => $u->id === $user->id,
                 'joined_at'  => $u->created_at->toIso8601String(),
             ]);
@@ -32,12 +33,12 @@ class TeamService
             ->orderByDesc('created_at')
             ->get()
             ->map(fn ($inv) => [
-                'id'           => $inv->id,
-                'email'        => $inv->email,
-                'role'         => $inv->role->value,
-                'role_label'   => $inv->role->label(),
-                'invited_by'   => $inv->invitedBy?->name,
-                'expires_at'   => $inv->expires_at->toIso8601String(),
+                'id'         => $inv->id,
+                'email'      => $inv->email,
+                'role'       => $inv->role->value,
+                'role_label' => $inv->role->label(),
+                'invited_by' => $inv->invitedBy?->name,
+                'expires_at' => $inv->expires_at->toIso8601String(),
             ]);
 
         return ['members' => $members, 'invitations' => $invitations];
@@ -80,6 +81,9 @@ class TeamService
         abort_if($admin->id === $targetId, 422, 'No puedes cambiar tu propio rol.');
 
         $target = User::where('tenant_id', $admin->tenant_id)->findOrFail($targetId);
+
+        abort_if($target->is_owner, 403, 'No puedes cambiar el rol del propietario de la cuenta.');
+
         $target->update(['role' => $role]);
 
         return $target->fresh();
@@ -90,6 +94,9 @@ class TeamService
         abort_if($admin->id === $targetId, 422, 'No puedes eliminarte a ti mismo.');
 
         $target = User::where('tenant_id', $admin->tenant_id)->findOrFail($targetId);
+
+        abort_if($target->is_owner, 403, 'No puedes eliminar al propietario de la cuenta.');
+
         $target->delete();
     }
 
@@ -113,6 +120,19 @@ class TeamService
         $invitation->delete();
     }
 
+    public function transferOwnership(User $owner, int $targetId): void
+    {
+        abort_unless($owner->is_owner, 403, 'Solo el propietario puede ceder la propiedad.');
+        abort_if($owner->id === $targetId, 422, 'No puedes cederte la propiedad a ti mismo.');
+
+        $target = User::where('tenant_id', $owner->tenant_id)->findOrFail($targetId);
+
+        abort_unless($target->role === TeamRole::Admin, 422, 'Solo puedes ceder la propiedad a un administrador.');
+
+        $owner->update(['is_owner' => false]);
+        $target->update(['is_owner' => true]);
+    }
+
     public function accept(string $token, string $name, string $password): User
     {
         $invitation = TeamInvitation::where('token', $token)
@@ -133,6 +153,7 @@ class TeamService
             'password'   => $password,
             'role'       => $invitation->role,
             'invited_by' => $invitation->invited_by,
+            'is_owner'   => false,
         ]);
 
         $user->markEmailAsVerified();

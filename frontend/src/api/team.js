@@ -8,3 +8,4 @@ export const resendInvitation    = (invitationId)        => api.post(`/team/invi
 export const cancelInvitation    = (invitationId)        => api.delete(`/team/invitations/${invitationId}`);
 export const acceptInvitation    = (token, name, password, password_confirmation) =>
     api.post(`/team/accept/${token}`, { name, password, password_confirmation });
+export const transferOwnership   = (userId)              => api.post(`/team/transfer-ownership/${userId}`);

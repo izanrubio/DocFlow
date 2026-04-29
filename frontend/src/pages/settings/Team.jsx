@@ -10,6 +10,9 @@ import {
     PencilSquareIcon,
     EyeIcon,
     EnvelopeIcon,
+    StarIcon,
+    ArrowsRightLeftIcon,
+    ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../hooks/useAuth';
@@ -21,6 +24,7 @@ import {
     removeMember,
     resendInvitation,
     cancelInvitation,
+    transferOwnership,
 } from '../../api/team';
 
 const ROLES = [
@@ -29,7 +33,15 @@ const ROLES = [
     { value: 'viewer', label: 'Visor',           Icon: EyeIcon,         color: 'text-gray-600 bg-gray-100 border-gray-200' },
 ];
 
-function RoleBadge({ role }) {
+function RoleBadge({ role, isOwner }) {
+    if (isOwner) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border text-amber-700 bg-amber-50 border-amber-200">
+                <StarIcon className="w-3 h-3" />
+                Propietario
+            </span>
+        );
+    }
     const r = ROLES.find((x) => x.value === role) ?? ROLES[2];
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${r.color}`}>
@@ -131,11 +143,53 @@ function InviteModal({ onClose }) {
     );
 }
 
+function TransferOwnershipModal({ target, onConfirm, onClose, isPending }) {
+    return (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                <div className="flex items-center gap-3 p-6 border-b border-gray-100">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                        <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">Ceder propiedad</h2>
+                </div>
+                <div className="p-6">
+                    <p className="text-sm text-gray-700 mb-3">
+                        Vas a ceder la propiedad de la cuenta a <strong>{target.name}</strong>.
+                    </p>
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-700 leading-relaxed">
+                            ¿Estás seguro? Perderás los privilegios de propietario y no podrás recuperarlos
+                            a menos que el nuevo propietario te los ceda.
+                        </p>
+                    </div>
+                </div>
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={isPending}
+                        className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                    >
+                        {isPending ? 'Transfiriendo…' : 'Confirmar transferencia'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function Team() {
-    const { user }                    = useAuth();
-    const { addToast }                = useToast();
-    const queryClient                 = useQueryClient();
-    const [showInvite, setShowInvite] = useState(false);
+    const { user }                              = useAuth();
+    const { addToast }                          = useToast();
+    const queryClient                           = useQueryClient();
+    const [showInvite, setShowInvite]           = useState(false);
+    const [transferTarget, setTransferTarget]   = useState(null);
 
     const { data, isLoading } = useQuery({
         queryKey: ['team'],
@@ -145,9 +199,10 @@ export default function Team() {
     const members     = data?.members     ?? [];
     const invitations = data?.invitations ?? [];
 
-    // Derive admin status from fresh API data (self member), fall back to stored user
+    // Derive roles from fresh API data
     const selfMember = members.find((m) => m.is_self);
     const isAdmin    = (selfMember?.role ?? user?.role) === 'admin';
+    const isOwner    = selfMember?.is_owner === true;
 
     const roleMutation = useMutation({
         mutationFn: ({ userId, role }) => updateMemberRole(userId, role),
@@ -171,6 +226,16 @@ export default function Team() {
         mutationFn: (id) => cancelInvitation(id),
         onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['team'] }); addToast('Invitación cancelada.', 'success'); },
         onError:    (err) => addToast(err.response?.data?.message ?? 'Error.', 'error'),
+    });
+
+    const transferMutation = useMutation({
+        mutationFn: (userId) => transferOwnership(userId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['team'] });
+            addToast('Propiedad transferida.', 'success');
+            setTransferTarget(null);
+        },
+        onError: (err) => addToast(err.response?.data?.message ?? 'Error.', 'error'),
     });
 
     return (
@@ -233,8 +298,8 @@ export default function Team() {
                                         <p className="text-xs text-gray-500 truncate">{m.email}</p>
                                     </div>
 
-                                    {/* Role — dropdown for admin on others, badge for self */}
-                                    {isAdmin && !m.is_self ? (
+                                    {/* Role — dropdown for admin on non-owner others, badge otherwise */}
+                                    {isAdmin && !m.is_self && !m.is_owner ? (
                                         <select
                                             value={m.role}
                                             onChange={(e) => roleMutation.mutate({ userId: m.id, role: e.target.value })}
@@ -246,11 +311,23 @@ export default function Team() {
                                             ))}
                                         </select>
                                     ) : (
-                                        <RoleBadge role={m.role} />
+                                        <RoleBadge role={m.role} isOwner={m.is_owner} />
                                     )}
 
-                                    {/* Delete button — admins only, not self */}
-                                    {isAdmin && !m.is_self && (
+                                    {/* Transfer ownership — owner only, for admins who aren't self */}
+                                    {isOwner && !m.is_self && m.role === 'admin' && (
+                                        <button
+                                            onClick={() => setTransferTarget(m)}
+                                            className="shrink-0 flex items-center gap-1 px-2 py-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+                                            title="Ceder propiedad"
+                                        >
+                                            <ArrowsRightLeftIcon className="w-3.5 h-3.5" />
+                                            Ceder
+                                        </button>
+                                    )}
+
+                                    {/* Delete — admin only, not self, not owner */}
+                                    {isAdmin && !m.is_self && !m.is_owner && (
                                         <button
                                             onClick={() => {
                                                 if (window.confirm(`¿Eliminar a ${m.name} del equipo? Esta acción no se puede deshacer.`)) {
@@ -339,10 +416,18 @@ export default function Team() {
                         )}
                     </div>
                 )}
-
             </div>
 
             {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
+
+            {transferTarget && (
+                <TransferOwnershipModal
+                    target={transferTarget}
+                    onConfirm={() => transferMutation.mutate(transferTarget.id)}
+                    onClose={() => setTransferTarget(null)}
+                    isPending={transferMutation.isPending}
+                />
+            )}
         </Layout>
     );
 }

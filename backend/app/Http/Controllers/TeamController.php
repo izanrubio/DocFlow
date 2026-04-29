@@ -71,6 +71,13 @@ class TeamController extends Controller
         return $this->success(null, 'Invitación cancelada.');
     }
 
+    public function transferOwnership(Request $request, int $userId): JsonResponse
+    {
+        $this->teamService->transferOwnership($request->user(), $userId);
+
+        return $this->success(null, 'Propiedad transferida correctamente.');
+    }
+
     public function accept(Request $request, string $token): JsonResponse
     {
         $data = $request->validate([
