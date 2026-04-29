@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\TeamRole;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -20,6 +21,7 @@ class AuthService
             'name'      => $name,
             'email'     => $email,
             'password'  => $password,
+            'role'      => TeamRole::Admin,
         ]);
     }
 

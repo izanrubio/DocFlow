@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TeamRole;
 use App\Notifications\CustomVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,14 +16,25 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasApiTokens, Notifiable;
     use \Illuminate\Auth\MustVerifyEmail;
 
-    protected $fillable = ['tenant_id', 'name', 'email', 'password'];
+    protected $fillable = ['tenant_id', 'name', 'email', 'password', 'role', 'invited_by'];
 
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
+        'password'          => 'hashed',
+        'role'              => TeamRole::class,
     ];
+
+    public function isAdmin(): bool
+    {
+        return $this->role === TeamRole::Admin;
+    }
+
+    public function canEdit(): bool
+    {
+        return $this->role !== TeamRole::Viewer;
+    }
 
     public function sendEmailVerificationNotification(): void
     {
@@ -42,5 +54,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function templates(): HasMany
     {
         return $this->hasMany(Template::class);
+    }
+
+    public function invitedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'invited_by');
     }
 }

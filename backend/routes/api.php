@@ -9,6 +9,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\SignerController;
 use App\Http\Controllers\SigningController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\RateLimiter;
@@ -80,6 +81,17 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('billing
     Route::get('subscription',       [BillingController::class, 'subscription']);
     Route::get('invoices',           [BillingController::class, 'invoices']);
 });
+
+Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('team')->group(function () {
+    Route::get('',                            [TeamController::class, 'index']);
+    Route::post('invite',                     [TeamController::class, 'invite'])->middleware('role:admin');
+    Route::put('{userId}/role',               [TeamController::class, 'updateRole'])->middleware('role:admin');
+    Route::delete('{userId}',                 [TeamController::class, 'remove'])->middleware('role:admin');
+    Route::post('invitations/{id}/resend',    [TeamController::class, 'resend'])->middleware('role:admin');
+    Route::delete('invitations/{id}',         [TeamController::class, 'cancelInvitation'])->middleware('role:admin');
+});
+
+Route::post('team/accept/{token}', [TeamController::class, 'accept'])->middleware('throttle:api');
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
 

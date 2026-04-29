@@ -6,6 +6,7 @@ import {
     RectangleStackIcon,
     CreditCardIcon,
     UserCircleIcon,
+    UserGroupIcon,
     ArrowRightStartOnRectangleIcon,
     ChevronUpDownIcon,
 } from '@heroicons/react/24/outline';
@@ -17,8 +18,16 @@ const NAV = [
     { label: 'Dashboard',   href: '/dashboard',        Icon: HomeIcon,           match: (p) => p === '/dashboard' },
     { label: 'Documentos',  href: '/documents',        Icon: DocumentTextIcon,   match: (p) => p === '/documents' || p.startsWith('/documents/') },
     { label: 'Plantillas',  href: '/templates',        Icon: RectangleStackIcon, match: (p) => p === '/templates' },
+    { label: 'Equipo',      href: '/settings/team',    Icon: UserGroupIcon,      match: (p) => p === '/settings/team' },
     { label: 'Facturación', href: '/settings/billing', Icon: CreditCardIcon,     match: (p) => p === '/settings/billing' },
 ];
+
+const ROLE_LABELS = { admin: 'Admin', editor: 'Editor', viewer: 'Visor' };
+const ROLE_COLORS = {
+    admin:  'text-purple-700 bg-purple-50',
+    editor: 'text-blue-700 bg-blue-50',
+    viewer: 'text-gray-600 bg-gray-100',
+};
 
 function UserMenu({ user, onLogout }) {
     const [open, setOpen] = useState(false);
@@ -51,6 +60,11 @@ function UserMenu({ user, onLogout }) {
                 <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-700 truncate">{user?.name}</p>
                     <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                    {user?.role && (
+                        <span className={`mt-0.5 inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${ROLE_COLORS[user.role] ?? ROLE_COLORS.viewer}`}>
+                            {ROLE_LABELS[user.role] ?? user.role}
+                        </span>
+                    )}
                 </div>
                 <ChevronUpDownIcon className="w-4 h-4 text-gray-400 shrink-0" />
             </button>
@@ -64,6 +78,14 @@ function UserMenu({ user, onLogout }) {
                     >
                         <UserCircleIcon className="w-4 h-4 text-gray-400" />
                         Mi perfil
+                    </Link>
+                    <Link
+                        to="/settings/team"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        <UserGroupIcon className="w-4 h-4 text-gray-400" />
+                        Equipo
                     </Link>
                     <Link
                         to="/settings/billing"
