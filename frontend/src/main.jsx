@@ -23,6 +23,8 @@ import Billing from './pages/settings/Billing';
 import Profile from './pages/settings/Profile';
 import Team from './pages/settings/Team';
 import AcceptInvitation from './pages/AcceptInvitation';
+import Developer from './pages/settings/Developer';
+import Docs from './pages/Docs';
 import Landing from './pages/Landing';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import TermsOfService from './pages/legal/TermsOfService';
@@ -50,7 +52,9 @@ createRoot(document.getElementById('root')).render(
           <Route path="/settings/billing" element={<PrivateRoute><Billing /></PrivateRoute>} />
           <Route path="/settings/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/settings/team" element={<PrivateRoute><Team /></PrivateRoute>} />
+          <Route path="/settings/developer" element={<PrivateRoute><Developer /></PrivateRoute>} />
           <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
+          <Route path="/docs" element={<Docs />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/" element={<Landing />} />

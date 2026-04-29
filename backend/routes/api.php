@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\ApiKeyController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\PublicApiController;
 use App\Http\Controllers\SignerController;
 use App\Http\Controllers\SigningController;
 use App\Http\Controllers\StripeWebhookController;
@@ -97,6 +99,31 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('team')-
 Route::post('team/accept/{token}', [TeamController::class, 'accept'])->middleware('throttle:api');
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
+
+// ── Developer: API key management (Sanctum, admin only) ───────────────────
+Route::middleware(['auth:sanctum', 'verified', 'throttle:api', 'role:admin'])->prefix('developer')->group(function () {
+    Route::get('keys',        [ApiKeyController::class, 'index']);
+    Route::post('keys',       [ApiKeyController::class, 'store']);
+    Route::put('keys/{id}',   [ApiKeyController::class, 'update']);
+    Route::delete('keys/{id}', [ApiKeyController::class, 'destroy']);
+});
+
+// ── Public API v1 (API key auth) ──────────────────────────────────────────
+Route::middleware('api.key')->prefix('v1')->group(function () {
+    Route::get('me', [PublicApiController::class, 'me']);
+
+    Route::get('documents',                              [PublicApiController::class, 'listDocuments']);
+    Route::post('documents',                             [PublicApiController::class, 'storeDocument']);
+    Route::get('documents/{id}',                         [PublicApiController::class, 'showDocument']);
+    Route::delete('documents/{id}',                      [PublicApiController::class, 'destroyDocument']);
+    Route::get('documents/{id}/download',                [PublicApiController::class, 'downloadDocument']);
+    Route::get('documents/{id}/download-original',       [PublicApiController::class, 'downloadOriginal']);
+    Route::post('documents/{id}/signers',                [PublicApiController::class, 'storeSigner']);
+    Route::delete('documents/{id}/signers/{signerId}',   [PublicApiController::class, 'destroySigner']);
+    Route::post('documents/{id}/send',                   [PublicApiController::class, 'sendDocument']);
+
+    Route::get('templates', [PublicApiController::class, 'listTemplates']);
+});
 
 Route::get('sign/{token}',          [SigningController::class, 'show'])->middleware('throttle:sign');
 Route::post('sign/{token}',         [SigningController::class, 'sign'])->middleware('throttle:sign_submit');

@@ -61,7 +61,9 @@ class DocumentService
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
-        return $query->paginate(15);
+        $perPage = min((int) ($filters['per_page'] ?? 15), 100);
+
+        return $query->paginate($perPage);
     }
 
     public function store(User $user, array $data, UploadedFile $file): Document

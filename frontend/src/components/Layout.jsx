@@ -7,10 +7,12 @@ import {
     CreditCardIcon,
     UserCircleIcon,
     UserGroupIcon,
+    CodeBracketIcon,
     ArrowRightStartOnRectangleIcon,
     ChevronUpDownIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
+import { usePermissions } from '../hooks/usePermissions';
 import * as authApi from '../api/auth';
 import NotificationBell from './NotificationBell';
 
@@ -29,7 +31,7 @@ const ROLE_COLORS = {
     viewer: 'text-gray-600 bg-gray-100',
 };
 
-function UserMenu({ user, onLogout }) {
+function UserMenu({ user, onLogout, isAdmin }) {
     const [open, setOpen] = useState(false);
     const ref             = useRef(null);
 
@@ -95,6 +97,16 @@ function UserMenu({ user, onLogout }) {
                         <CreditCardIcon className="w-4 h-4 text-gray-400" />
                         Facturación
                     </Link>
+                    {isAdmin && (
+                        <Link
+                            to="/settings/developer"
+                            onClick={() => setOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                            <CodeBracketIcon className="w-4 h-4 text-gray-400" />
+                            API & Desarrolladores
+                        </Link>
+                    )}
                     <div className="border-t border-gray-100 my-1" />
                     <button
                         onClick={() => { setOpen(false); onLogout(); }}
@@ -111,6 +123,7 @@ function UserMenu({ user, onLogout }) {
 
 export default function Layout({ children }) {
     const { user, logout } = useAuth();
+    const { isAdmin }      = usePermissions();
     const navigate         = useNavigate();
     const { pathname }     = useLocation();
 
@@ -121,6 +134,10 @@ export default function Layout({ children }) {
         }
     };
 
+    const allNav = isAdmin
+        ? [...NAV, { label: 'API & Dev', href: '/settings/developer', Icon: CodeBracketIcon, match: (p) => p === '/settings/developer' }]
+        : NAV;
+
     return (
         <div className="flex h-screen bg-gray-50">
             <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
@@ -128,7 +145,7 @@ export default function Layout({ children }) {
                     <h1 className="text-xl font-bold text-indigo-600">DocFlow</h1>
                 </div>
                 <nav className="flex-1 p-4 space-y-1">
-                    {NAV.map(({ label, href, Icon, match }) => {
+                    {allNav.map(({ label, href, Icon, match }) => {
                         const active = match(pathname);
                         return (
                             <Link
@@ -145,7 +162,7 @@ export default function Layout({ children }) {
                         );
                     })}
                 </nav>
-                <UserMenu user={user} onLogout={handleLogout} />
+                <UserMenu user={user} onLogout={handleLogout} isAdmin={isAdmin} />
             </aside>
 
             {/* main: flex-col, NO overflow here — only the content div scrolls */}
