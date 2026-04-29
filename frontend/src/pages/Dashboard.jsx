@@ -20,6 +20,7 @@ import Layout from '../components/Layout';
 import UploadDocumentModal from '../components/UploadDocumentModal';
 import { getDashboardStats } from '../api/dashboard';
 import { useAuth } from '../hooks/useAuth';
+import { usePermissions } from '../hooks/usePermissions';
 
 function greeting() {
     const h = new Date().getHours();
@@ -96,8 +97,9 @@ function StatCardSkeleton() {
 
 /* ── Main component ─────────────────────────────────────────────── */
 export default function Dashboard() {
-    const { user }  = useAuth();
-    const navigate  = useNavigate();
+    const { user }         = useAuth();
+    const { isViewer }     = usePermissions();
+    const navigate         = useNavigate();
     const [showUpload, setShowUpload] = useState(false);
 
     const { data: stats, isLoading } = useQuery({
@@ -241,19 +243,23 @@ export default function Dashboard() {
                         <div className="flex flex-col gap-2.5">
                             <button
                                 onClick={() => setShowUpload(true)}
-                                className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-white rounded-xl transition-all duration-200 hover:opacity-90 hover:shadow-lg hover:shadow-indigo-200 active:scale-[0.98]"
+                                disabled={isViewer}
+                                title={isViewer ? 'No tienes permisos para crear documentos' : undefined}
+                                className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-white rounded-xl transition-all duration-200 hover:opacity-90 hover:shadow-lg hover:shadow-indigo-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50 disabled:hover:shadow-none disabled:active:scale-100"
                                 style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}
                             >
                                 <PlusIcon className="w-4 h-4" />
                                 Subir documento
                             </button>
-                            <Link
-                                to="/templates"
-                                className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                            <button
+                                onClick={() => navigate('/templates')}
+                                disabled={isViewer}
+                                title={isViewer ? 'No tienes permisos para crear documentos' : undefined}
+                                className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-200"
                             >
                                 <RectangleStackIcon className="w-4 h-4 text-gray-400" />
                                 Desde plantilla
-                            </Link>
+                            </button>
                             <Link
                                 to="/documents"
                                 className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold rounded-xl transition-colors"

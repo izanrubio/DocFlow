@@ -26,6 +26,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { getDocument, deleteDocument, addSigner, removeSigner, sendDocument, downloadDocument, downloadOriginalDocument } from '../api/documents';
 import { useBillingUsage } from '../hooks/useBillingUsage';
 import { useToast } from '../context/ToastContext';
+import { usePermissions } from '../hooks/usePermissions';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -134,6 +135,7 @@ export default function DocumentDetail() {
     const [signerErrors, setSignerErrors] = useState({});
     const [confirmModal, setConfirmModal] = useState(null); // null | 'delete' | 'send'
     const toast = useToast();
+    const { isViewer } = usePermissions();
 
     const { data: billing } = useBillingUsage();
 
@@ -405,8 +407,8 @@ export default function DocumentDetail() {
                             {isDraft && !showAddForm && (
                                 <button
                                     onClick={() => { setShowAddForm(true); setSignerForm({ ...EMPTY_SIGNER, order: (doc.signers?.length ?? 0) + 1 }); }}
-                                    disabled={signerAtLimit}
-                                    title={signerAtLimit ? `Límite de ${signerLimit} firmantes alcanzado` : undefined}
+                                    disabled={signerAtLimit || isViewer}
+                                    title={isViewer ? 'No tienes permisos para añadir firmantes' : signerAtLimit ? `Límite de ${signerLimit} firmantes alcanzado` : undefined}
                                     className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     <UserPlusIcon className="w-3.5 h-3.5" /> Añadir
@@ -508,8 +510,9 @@ export default function DocumentDetail() {
                         {isDraft && hasSigner && !showAddForm && (
                             <button
                                 onClick={handleSend}
-                                disabled={sendMutation.isPending}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors mt-2"
+                                disabled={sendMutation.isPending || isViewer}
+                                title={isViewer ? 'No tienes permisos para enviar documentos' : undefined}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-2"
                             >
                                 <PaperAirplaneIcon className="w-4 h-4" />
                                 {sendMutation.isPending ? 'Enviando…' : 'Enviar para firma'}
@@ -537,8 +540,9 @@ export default function DocumentDetail() {
                     {isDraft && (
                         <button
                             onClick={handleDelete}
-                            disabled={deleteMutation.isPending}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
+                            disabled={deleteMutation.isPending || isViewer}
+                            title={isViewer ? 'No tienes permisos para eliminar documentos' : undefined}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <TrashIcon className="w-4 h-4" />
                             {deleteMutation.isPending ? 'Eliminando…' : 'Eliminar documento'}

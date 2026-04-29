@@ -16,6 +16,7 @@ import TemplateVariablesHelp from '../components/TemplateVariablesHelp';
 import ConfirmModal from '../components/ConfirmModal';
 import { getTemplates, deleteTemplate } from '../api/templates';
 import { useToast } from '../context/ToastContext';
+import { usePermissions } from '../hooks/usePermissions';
 
 function TemplateBadge({ isSystem }) {
     if (!isSystem) return null;
@@ -42,7 +43,8 @@ function VariablesBadge({ template }) {
     );
 }
 
-function TemplateCard({ template, onUse, onDelete, onEditVariables }) {
+function TemplateCard({ template, onUse, onDelete, onEditVariables, isViewer }) {
+    const noPermMsg = 'No tienes permisos para crear plantillas';
     return (
         <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow">
             <div className="flex items-start gap-3">
@@ -69,7 +71,9 @@ function TemplateCard({ template, onUse, onDelete, onEditVariables }) {
             <div className="flex items-center gap-2 pt-1 border-t border-gray-100">
                 <button
                     onClick={() => onUse(template)}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                    disabled={isViewer}
+                    title={isViewer ? noPermMsg : undefined}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Usar plantilla
                 </button>
@@ -88,15 +92,17 @@ function TemplateCard({ template, onUse, onDelete, onEditVariables }) {
                     <>
                         <button
                             onClick={() => onEditVariables(template)}
-                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                            title="Editar variables"
+                            disabled={isViewer}
+                            title={isViewer ? noPermMsg : 'Editar variables'}
+                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
                         >
                             <PencilSquareIcon className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => onDelete(template)}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Eliminar plantilla"
+                            disabled={isViewer}
+                            title={isViewer ? noPermMsg : 'Eliminar plantilla'}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
                         >
                             <TrashIcon className="w-4 h-4" />
                         </button>
@@ -108,7 +114,8 @@ function TemplateCard({ template, onUse, onDelete, onEditVariables }) {
 }
 
 export default function Templates() {
-    const queryClient = useQueryClient();
+    const { isViewer }                          = usePermissions();
+    const queryClient                           = useQueryClient();
     const [showUpload, setShowUpload]           = useState(false);
     const [useModal, setUseModal]               = useState(null);
     const [deleteTarget, setDeleteTarget]       = useState(null);
@@ -145,7 +152,9 @@ export default function Templates() {
                 </div>
                 <button
                     onClick={() => setShowUpload(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    disabled={isViewer}
+                    title={isViewer ? 'No tienes permisos para crear plantillas' : undefined}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <PlusIcon className="w-4 h-4" />
                     Nueva plantilla
@@ -175,7 +184,9 @@ export default function Templates() {
                                 </p>
                                 <button
                                     onClick={() => setShowUpload(true)}
-                                    className="mt-4 px-4 py-2 text-sm font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
+                                    disabled={isViewer}
+                                    title={isViewer ? 'No tienes permisos para crear plantillas' : undefined}
+                                    className="mt-4 px-4 py-2 text-sm font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Subir primera plantilla
                                 </button>
@@ -189,6 +200,7 @@ export default function Templates() {
                                         onUse={setUseModal}
                                         onDelete={handleDelete}
                                         onEditVariables={setEditVarsTemplate}
+                                        isViewer={isViewer}
                                     />
                                 ))}
                             </div>
@@ -207,6 +219,7 @@ export default function Templates() {
                                     onUse={setUseModal}
                                     onDelete={handleDelete}
                                     onEditVariables={setEditVarsTemplate}
+                                    isViewer={isViewer}
                                 />
                             ))}
                         </div>
