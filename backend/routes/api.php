@@ -106,10 +106,10 @@ Route::get('waitlist/count', [WaitlistController::class, 'count']);
 Route::post('waitlist', [WaitlistController::class, 'store'])->middleware('throttle:waitlist');
 
 // ── Waitlist admin ────────────────────────────────────────────────────────
-Route::middleware(['auth:sanctum', 'verified', 'throttle:api', 'role:admin'])->prefix('admin/waitlist')->group(function () {
-    Route::get('',       [WaitlistController::class, 'index']);
-    Route::get('stats',  [WaitlistController::class, 'stats']);
-    Route::post('launch', [WaitlistController::class, 'launch'])->middleware('owner');
+Route::middleware(['auth:sanctum', 'verified', 'throttle:api', 'role:admin', 'owner'])->prefix('admin/waitlist')->group(function () {
+    Route::get('',        [WaitlistController::class, 'index']);
+    Route::get('stats',   [WaitlistController::class, 'stats']);
+    Route::post('launch', [WaitlistController::class, 'launch']);
 });
 
 // ── Developer: API key management (Sanctum, admin only) ───────────────────

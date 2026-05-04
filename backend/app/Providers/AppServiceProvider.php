@@ -34,7 +34,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('waitlist', function (Request $request) {
-            return Limit::perHour(3)->by('waitlist:' . $request->ip());
+            $max = app()->environment('local') ? 20 : 3;
+            return Limit::perHour($max)->by('waitlist:' . $request->ip());
         });
 
         RateLimiter::for('api', function (Request $request) {

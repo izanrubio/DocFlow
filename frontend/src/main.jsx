@@ -29,6 +29,7 @@ import Docs from './pages/Docs';
 import Landing from './pages/Landing';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import TermsOfService from './pages/legal/TermsOfService';
+import OwnerRoute from './components/OwnerRoute';
 
 const queryClient = new QueryClient();
 
@@ -54,7 +55,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/settings/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/settings/team" element={<PrivateRoute><Team /></PrivateRoute>} />
           <Route path="/settings/developer" element={<PrivateRoute><Developer /></PrivateRoute>} />
-          <Route path="/admin/waitlist" element={<PrivateRoute><AdminWaitlist /></PrivateRoute>} />
+          <Route path="/admin/waitlist" element={<PrivateRoute><OwnerRoute><AdminWaitlist /></OwnerRoute></PrivateRoute>} />
           <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
