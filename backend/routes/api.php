@@ -12,6 +12,7 @@ use App\Http\Controllers\PublicApiController;
 use App\Http\Controllers\SignerController;
 use App\Http\Controllers\SigningController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Artisan;
@@ -110,6 +111,19 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api', 'role:admin', 'ow
     Route::get('',        [WaitlistController::class, 'index']);
     Route::get('stats',   [WaitlistController::class, 'stats']);
     Route::post('launch', [WaitlistController::class, 'launch']);
+});
+
+// ── Super Admin (owner only) ──────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'verified', 'throttle:api', 'owner'])->prefix('superadmin')->group(function () {
+    Route::get('stats',                   [SuperAdminController::class, 'stats']);
+    Route::get('tenants',                 [SuperAdminController::class, 'tenants']);
+    Route::get('tenants/{id}',            [SuperAdminController::class, 'tenantDetail']);
+    Route::put('tenants/{id}/plan',       [SuperAdminController::class, 'changePlan']);
+    Route::get('users',                   [SuperAdminController::class, 'users']);
+    Route::get('activity',                [SuperAdminController::class, 'activity']);
+    Route::get('waitlist',                [SuperAdminController::class, 'waitlist']);
+    Route::get('waitlist/stats',          [SuperAdminController::class, 'waitlistStats']);
+    Route::post('waitlist/launch',        [WaitlistController::class,   'launch']);
 });
 
 // ── Developer: API key management (Sanctum, admin only) ───────────────────

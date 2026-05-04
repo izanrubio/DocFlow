@@ -24,7 +24,11 @@ import Profile from './pages/settings/Profile';
 import Team from './pages/settings/Team';
 import AcceptInvitation from './pages/AcceptInvitation';
 import Developer from './pages/settings/Developer';
-import AdminWaitlist from './pages/admin/Waitlist';
+import SuperAdminIndex    from './pages/superadmin/Index';
+import SuperAdminTenants  from './pages/superadmin/Tenants';
+import TenantDetail       from './pages/superadmin/TenantDetail';
+import SuperAdminUsers    from './pages/superadmin/Users';
+import SuperAdminWaitlist from './pages/superadmin/Waitlist';
 import Docs from './pages/Docs';
 import Landing from './pages/Landing';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
@@ -55,7 +59,11 @@ createRoot(document.getElementById('root')).render(
           <Route path="/settings/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/settings/team" element={<PrivateRoute><Team /></PrivateRoute>} />
           <Route path="/settings/developer" element={<PrivateRoute><Developer /></PrivateRoute>} />
-          <Route path="/admin/waitlist" element={<PrivateRoute><OwnerRoute><AdminWaitlist /></OwnerRoute></PrivateRoute>} />
+          <Route path="/superadmin"               element={<PrivateRoute><OwnerRoute><SuperAdminIndex    /></OwnerRoute></PrivateRoute>} />
+          <Route path="/superadmin/tenants"      element={<PrivateRoute><OwnerRoute><SuperAdminTenants  /></OwnerRoute></PrivateRoute>} />
+          <Route path="/superadmin/tenants/:id"  element={<PrivateRoute><OwnerRoute><TenantDetail       /></OwnerRoute></PrivateRoute>} />
+          <Route path="/superadmin/users"        element={<PrivateRoute><OwnerRoute><SuperAdminUsers    /></OwnerRoute></PrivateRoute>} />
+          <Route path="/superadmin/waitlist"     element={<PrivateRoute><OwnerRoute><SuperAdminWaitlist /></OwnerRoute></PrivateRoute>} />
           <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

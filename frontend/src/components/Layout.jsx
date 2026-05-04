@@ -8,9 +8,12 @@ import {
     UserCircleIcon,
     UserGroupIcon,
     CodeBracketIcon,
-    ClipboardDocumentListIcon,
     ArrowRightStartOnRectangleIcon,
     ChevronUpDownIcon,
+    ChartBarIcon,
+    BuildingOffice2Icon,
+    ClipboardDocumentListIcon,
+    Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 import { usePermissions } from '../hooks/usePermissions';
@@ -137,9 +140,15 @@ export default function Layout({ children }) {
 
     const allNav = [
         ...NAV,
-        ...(isAdmin  ? [{ label: 'API & Dev',     href: '/settings/developer', Icon: CodeBracketIcon,          match: (p) => p === '/settings/developer' }] : []),
-        ...(isOwner  ? [{ label: 'Admin Waitlist', href: '/admin/waitlist',     Icon: ClipboardDocumentListIcon, match: (p) => p === '/admin/waitlist' }] : []),
+        ...(isAdmin ? [{ label: 'API & Dev', href: '/settings/developer', Icon: CodeBracketIcon, match: (p) => p === '/settings/developer' }] : []),
     ];
+
+    const superAdminNav = isOwner ? [
+        { label: 'Dashboard',  href: '/superadmin',          Icon: ChartBarIcon,             match: (p) => p === '/superadmin' },
+        { label: 'Tenants',    href: '/superadmin/tenants',   Icon: BuildingOffice2Icon,      match: (p) => p.startsWith('/superadmin/tenants') },
+        { label: 'Usuarios',   href: '/superadmin/users',     Icon: UserGroupIcon,            match: (p) => p === '/superadmin/users' },
+        { label: 'Waitlist',   href: '/superadmin/waitlist',  Icon: ClipboardDocumentListIcon, match: (p) => p === '/superadmin/waitlist' },
+    ] : [];
 
     return (
         <div className="flex h-screen bg-gray-50">
@@ -147,7 +156,7 @@ export default function Layout({ children }) {
                 <div className="p-6 border-b border-gray-200">
                     <h1 className="text-xl font-bold text-indigo-600">DocFlow</h1>
                 </div>
-                <nav className="flex-1 p-4 space-y-1">
+                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                     {allNav.map(({ label, href, Icon, match }) => {
                         const active = match(pathname);
                         return (
@@ -164,6 +173,34 @@ export default function Layout({ children }) {
                             </Link>
                         );
                     })}
+
+                    {superAdminNav.length > 0 && (
+                        <>
+                            <div className="pt-3 pb-1">
+                                <div className="border-t border-gray-200" />
+                            </div>
+                            <div className="flex items-center gap-2 px-3 py-1.5">
+                                <Cog6ToothIcon className="w-3.5 h-3.5 text-gray-400" />
+                                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Super Admin</span>
+                            </div>
+                            {superAdminNav.map(({ label, href, Icon, match }) => {
+                                const active = match(pathname);
+                                return (
+                                    <Link
+                                        key={label}
+                                        to={href}
+                                        className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                                            ${active
+                                                ? 'bg-indigo-50 text-indigo-700'
+                                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
+                                    >
+                                        <Icon className="w-5 h-5 shrink-0" />
+                                        {label}
+                                    </Link>
+                                );
+                            })}
+                        </>
+                    )}
                 </nav>
                 <UserMenu user={user} onLogout={handleLogout} isAdmin={isAdmin} />
             </aside>
