@@ -1,5 +1,61 @@
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckIcon } from '@heroicons/react/24/solid';
+import { joinWaitlist } from '../api/waitlist';
+
+function WaitlistCompact() {
+    const [email, setEmail]     = useState('');
+    const [website, setWebsite] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [done, setDone]       = useState(false);
+    const [error, setError]     = useState('');
+
+    const submit = useCallback(async (e) => {
+        e.preventDefault();
+        if (!email) return;
+        setLoading(true);
+        setError('');
+        try {
+            await joinWaitlist({ email, source: 'pricing', website: website || undefined });
+            setDone(true);
+        } catch (err) {
+            const msg = err.response?.data?.message;
+            if (msg?.includes('Ya estás')) { setDone(true); return; }
+            setError(msg ?? 'Algo salió mal. Intenta de nuevo.');
+        } finally {
+            setLoading(false);
+        }
+    }, [email, website]);
+
+    return (
+        <div className="mt-12 border-t border-gray-200 pt-10 text-center">
+            <p className="text-sm text-gray-500 mb-3">¿Aún no disponible para ti? Únete a la lista de espera.</p>
+            {done ? (
+                <p className="text-sm font-medium text-indigo-600">✅ ¡Estás dentro! Te avisaremos cuando lancemos.</p>
+            ) : (
+                <form onSubmit={submit} className="flex flex-col sm:flex-row gap-2 justify-center max-w-md mx-auto">
+                    <input type="text" name="website" value={website} onChange={(e) => setWebsite(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="tu@email.com"
+                        required
+                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60 whitespace-nowrap"
+                    >
+                        {loading ? 'Enviando…' : 'Unirme →'}
+                    </button>
+                </form>
+            )}
+            {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+        </div>
+    );
+}
 
 const PLANS = [
     {
@@ -134,6 +190,8 @@ export default function Pricing() {
                         ¿Ya tienes cuenta? Inicia sesión
                     </Link>
                 </div>
+
+                <WaitlistCompact />
             </div>
         </div>
     );

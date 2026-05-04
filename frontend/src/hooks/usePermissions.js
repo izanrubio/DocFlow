@@ -15,6 +15,7 @@ export function usePermissions() {
     const isViewer = !role || role === 'viewer';
     const isEditor = role === 'editor';
     const isAdmin  = role === 'admin';
+    const isOwner  = user?.is_owner === true;
 
     const canCreate = isAdmin || isEditor;
     const canEdit   = isAdmin || isEditor;
@@ -24,8 +25,8 @@ export function usePermissions() {
 
     if (process.env.NODE_ENV === 'development') {
         // eslint-disable-next-line no-console
-        console.debug('[usePermissions] raw role:', user?.role, '→ normalized:', role, '→ isViewer:', isViewer);
+        console.debug('[usePermissions] raw role:', user?.role, '→ normalized:', role, '→ isViewer:', isViewer, '→ isOwner:', isOwner);
     }
 
-    return { canCreate, canEdit, canDelete, isViewer, isEditor, isAdmin, noPermMsg };
+    return { canCreate, canEdit, canDelete, isViewer, isEditor, isAdmin, isOwner, noPermMsg };
 }

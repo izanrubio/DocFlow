@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApiKeyController;
+use App\Http\Controllers\WaitlistController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\NotificationController;
@@ -99,6 +100,17 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->prefix('team')-
 Route::post('team/accept/{token}', [TeamController::class, 'accept'])->middleware('throttle:api');
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
+
+// ── Waitlist (public) ────────────────────────────────────────────────────
+Route::get('waitlist/count', [WaitlistController::class, 'count']);
+Route::post('waitlist', [WaitlistController::class, 'store'])->middleware('throttle:waitlist');
+
+// ── Waitlist admin ────────────────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'verified', 'throttle:api', 'role:admin'])->prefix('admin/waitlist')->group(function () {
+    Route::get('',       [WaitlistController::class, 'index']);
+    Route::get('stats',  [WaitlistController::class, 'stats']);
+    Route::post('launch', [WaitlistController::class, 'launch'])->middleware('owner');
+});
 
 // ── Developer: API key management (Sanctum, admin only) ───────────────────
 Route::middleware(['auth:sanctum', 'verified', 'throttle:api', 'role:admin'])->prefix('developer')->group(function () {

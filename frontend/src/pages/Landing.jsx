@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { joinWaitlist, getWaitlistCount } from '../api/waitlist';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     DocumentTextIcon,
@@ -519,6 +520,141 @@ function PricingSection() {
     );
 }
 
+/* ─── Waitlist ──────────────────────────────────────────────────────────── */
+
+function WaitlistSection({ source = 'landing', compact = false }) {
+    const [name, setName]       = useState('');
+    const [email, setEmail]     = useState('');
+    const [website, setWebsite] = useState('');  // honeypot
+    const [loading, setLoading] = useState(false);
+    const [done, setDone]       = useState(false);
+    const [error, setError]     = useState('');
+    const [count, setCount]     = useState(null);
+
+    useEffect(() => {
+        if (compact) return;
+        getWaitlistCount()
+            .then((r) => setCount(r.data.data.count))
+            .catch(() => {});
+    }, [compact]);
+
+    const submit = useCallback(async (e) => {
+        e.preventDefault();
+        if (!email) return;
+        setLoading(true);
+        setError('');
+        try {
+            await joinWaitlist({ email, name: name || undefined, source, website: website || undefined });
+            setDone(true);
+        } catch (err) {
+            const msg = err.response?.data?.message;
+            if (msg?.includes('Ya estás')) { setDone(true); return; }
+            setError(msg ?? 'Algo salió mal. Intenta de nuevo.');
+        } finally {
+            setLoading(false);
+        }
+    }, [email, name, source, website]);
+
+    if (compact) {
+        return (
+            <div className="mt-12 border-t border-gray-200 pt-10 text-center">
+                <p className="text-sm text-gray-500 mb-3">¿Aún no disponible para ti? Únete a la lista de espera.</p>
+                {done ? (
+                    <p className="text-sm font-medium text-indigo-600">✅ ¡Estás dentro! Te avisaremos cuando lancemos.</p>
+                ) : (
+                    <form onSubmit={submit} className="flex flex-col sm:flex-row gap-2 justify-center max-w-md mx-auto">
+                        <input type="text" name="website" value={website} onChange={(e) => setWebsite(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="tu@email.com"
+                            required
+                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60 whitespace-nowrap"
+                        >
+                            {loading ? 'Enviando…' : 'Unirme →'}
+                        </button>
+                    </form>
+                )}
+                {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+            </div>
+        );
+    }
+
+    return (
+        <section className="py-24 bg-gradient-to-br from-indigo-950 via-indigo-900 to-black relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_60%)]" />
+            <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full bg-purple-800 opacity-20 blur-3xl" />
+
+            <div className="relative max-w-2xl mx-auto px-5 text-center">
+                <Reveal>
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-800/60 border border-indigo-700 text-indigo-300 text-xs font-medium mb-6">
+                        🚀 Próximamente
+                    </div>
+                    <h2 className="font-display text-3xl md:text-5xl font-extrabold text-white mb-5 leading-tight">
+                        Sé el primero en saberlo
+                    </h2>
+                    <p className="text-indigo-200 text-lg mb-4 leading-relaxed">
+                        DocFlow está en desarrollo. Únete a la lista de espera y te avisaremos cuando abramos las puertas.
+                    </p>
+
+                    {count !== null && (
+                        <p className="text-indigo-400 text-sm mb-8 font-medium">
+                            <span className="text-white font-bold tabular-nums">{count.toLocaleString('es-ES')}</span> personas ya están esperando
+                        </p>
+                    )}
+
+                    {done ? (
+                        <div className="inline-flex flex-col items-center gap-3">
+                            <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center">
+                                <span className="text-3xl">✅</span>
+                            </div>
+                            <p className="text-white text-xl font-bold">¡Estás dentro!</p>
+                            <p className="text-indigo-300 text-sm">Te avisaremos cuando lancemos. Revisa tu email.</p>
+                        </div>
+                    ) : (
+                        <form onSubmit={submit} className="flex flex-col gap-3 max-w-sm mx-auto">
+                            <input type="text" name="website" value={website} onChange={(e) => setWebsite(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Tu nombre (opcional)"
+                                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+                            />
+                            <div className="flex gap-2">
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="tu@email.com"
+                                    required
+                                    className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="px-5 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-colors disabled:opacity-60 text-sm whitespace-nowrap"
+                                >
+                                    {loading ? '…' : '🚀 Unirme'}
+                                </button>
+                            </div>
+                            {error && <p className="text-red-400 text-xs text-left">{error}</p>}
+                        </form>
+                    )}
+
+                    <p className="text-indigo-500 text-xs mt-6">Sin spam. Solo te avisamos cuando lancemos.</p>
+                </Reveal>
+            </div>
+        </section>
+    );
+}
+
 /* ─── Final CTA ─────────────────────────────────────────────────────────── */
 
 function FinalCTA() {
@@ -595,6 +731,7 @@ export default function Landing() {
             <HowItWorks />
             <Features />
             <Testimonials />
+            <WaitlistSection source="landing" />
             <PricingSection />
             <FinalCTA />
             <Footer />

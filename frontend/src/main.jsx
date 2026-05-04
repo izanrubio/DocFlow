@@ -24,6 +24,7 @@ import Profile from './pages/settings/Profile';
 import Team from './pages/settings/Team';
 import AcceptInvitation from './pages/AcceptInvitation';
 import Developer from './pages/settings/Developer';
+import AdminWaitlist from './pages/admin/Waitlist';
 import Docs from './pages/Docs';
 import Landing from './pages/Landing';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
@@ -53,6 +54,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/settings/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/settings/team" element={<PrivateRoute><Team /></PrivateRoute>} />
           <Route path="/settings/developer" element={<PrivateRoute><Developer /></PrivateRoute>} />
+          <Route path="/admin/waitlist" element={<PrivateRoute><AdminWaitlist /></PrivateRoute>} />
           <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

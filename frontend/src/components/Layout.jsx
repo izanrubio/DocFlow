@@ -8,6 +8,7 @@ import {
     UserCircleIcon,
     UserGroupIcon,
     CodeBracketIcon,
+    ClipboardDocumentListIcon,
     ArrowRightStartOnRectangleIcon,
     ChevronUpDownIcon,
 } from '@heroicons/react/24/outline';
@@ -134,9 +135,11 @@ export default function Layout({ children }) {
         }
     };
 
-    const allNav = isAdmin
-        ? [...NAV, { label: 'API & Dev', href: '/settings/developer', Icon: CodeBracketIcon, match: (p) => p === '/settings/developer' }]
-        : NAV;
+    const allNav = [
+        ...NAV,
+        ...(isAdmin  ? [{ label: 'API & Dev',     href: '/settings/developer', Icon: CodeBracketIcon,          match: (p) => p === '/settings/developer' }] : []),
+        ...(isOwner  ? [{ label: 'Admin Waitlist', href: '/admin/waitlist',     Icon: ClipboardDocumentListIcon, match: (p) => p === '/admin/waitlist' }] : []),
+    ];
 
     return (
         <div className="flex h-screen bg-gray-50">

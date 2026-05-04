@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role'    => \App\Http\Middleware\RequireRole::class,
             'api.key' => \App\Http\Middleware\ApiKeyAuth::class,
+            'owner'   => \App\Http\Middleware\RequireOwner::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

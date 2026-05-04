@@ -33,6 +33,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by('sign_submit:' . $request->ip() . ':' . $request->route('token'));
         });
 
+        RateLimiter::for('waitlist', function (Request $request) {
+            return Limit::perHour(3)->by('waitlist:' . $request->ip());
+        });
+
         RateLimiter::for('api', function (Request $request) {
             return $request->user()
                 ? Limit::perMinute(60)->by('api:' . $request->user()->id)
