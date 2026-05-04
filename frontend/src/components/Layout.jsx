@@ -124,7 +124,7 @@ function UserMenu({ user, onLogout, isAdmin }) {
 
 export default function Layout({ children }) {
     const { user, logout } = useAuth();
-    const { isAdmin }      = usePermissions();
+    const { isAdmin, isOwner } = usePermissions();
     const navigate         = useNavigate();
     const { pathname }     = useLocation();
 
